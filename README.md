@@ -103,6 +103,10 @@ for Visual Robot Manipulation
 
 - [OKAMI: Teaching Humanoid Robots Manipulation Skills through Single Video Imitation](https://ut-austin-rpl.github.io/OKAMI/)
 
+### Researchers
+
+[Yuke Zhu](https://yukezhu.me) [Yuzhe Qin](https://yzqin.github.io/) 
+
 ## Community
 
 ### Conferences
