@@ -5,10 +5,9 @@ A curated list of awesome projects, resources, and research related to **Embodie
 ## Contents
 - [Introduction](#introduction)
 - [Open Source Projects](#open-source-projects)
-- [Research Frameworks](#research-frameworks)
 - [Datasets](#datasets)
 - [Learning Resources](#learning-resources)
-- [Companies & Labs](#companies--labs)
+- [Companies & Robots](#companies--robots)
 - [Research Papers](#research-papers)
 - [Community](#community)
 
@@ -64,7 +63,7 @@ for Visual Robot Manipulation
 - [Google AI Robotics Research](https://ai.google/research/teams/brain/robotics/)
 - [OpenAI Robotics Blog](https://openai.com/blog/tags/robotics/)
 
-## Companies & Labs
+## Companies & Robotics
 
 ### Research Labs
 - [Berkeley AI Research (BAIR)](https://bair.berkeley.edu/)
