@@ -23,6 +23,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [Tesla Optimus](https://www.tesla.com/optimus) - Tesla's humanoid robot project
 - [Figure 01](https://www.figure.ai/) - General purpose humanoid robot
 - [Phoenix](https://github.com/PhoenixNine/Phoenix) - Open-source humanoid robot design
+- [Fourier GR-2]([https://www.fftai.cn](https://www.fftai.cn/products-gr2)) - Fourier General Purpose Humanoid Robotics
 
 ### Simulation Environments
 - [Isaac Gym](https://developer.nvidia.com/isaac-gym) - NVIDIA's physics simulation environment
@@ -48,6 +49,8 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [MoveIt](https://moveit.ros.org/) - Motion planning framework
 - [OMPL](https://ompl.kavrakilab.org/) - Open Motion Planning Library
 - [Drake](https://drake.mit.edu/) - Planning and control toolkit
+- [GR-1](https://gr1-manipulation.github.io/) - ByteDance Research: Unleashing Large-Scale Video Generative Pre-training
+for Visual Robot Manipulation
 
 ## Datasets
 
