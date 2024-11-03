@@ -88,7 +88,7 @@ for Visual Robot Manipulation
 
 ### Research Labs
 - [Berkeley AI Research (BAIR)](https://bair.berkeley.edu/)
-- [Stanford AI Lab](http://ai.stanford.edu/)
+- [Stanford Robotics & Embodied Artificial Intelligence Lab (REAL)](http://real.stanford.edu/)
 - [MIT CSAIL](https://www.csail.mit.edu/)
 - [Google DeepMind](https://www.deepmind.com/)
 
