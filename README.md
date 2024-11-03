@@ -68,7 +68,8 @@ for Visual Robot Manipulation
 
 ### Benchmarks
 
-- [Calvin](http://calvin.cs.uni-freiburg.de/) - CALVIN: A Benchmark for Language-Conditioned Policy Learning for Long-Horizon Robot Manipulation Tasks
+- [CALVIN](http://calvin.cs.uni-freiburg.de/) - CALVIN: A Benchmark for Language-Conditioned Policy Learning for Long-Horizon Robot Manipulation Tasks
+- [DexYCB](https://dex-ycb.github.io/) - A Benchmark for Capturing Hand Grasping of Objects
 
 ## Learning Resources
 
