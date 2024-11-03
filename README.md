@@ -52,6 +52,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [Drake](https://drake.mit.edu/) - Planning and control toolkit
 - [GR-1](https://gr1-manipulation.github.io/) - ByteDance Research: Unleashing Large-Scale Video Generative Pre-training
 for Visual Robot Manipulation
+- [Universal Manipulation Interface(UMI)](https://umi-gripper.github.io/)
 
 ## Datasets
 
