@@ -1,6 +1,6 @@
 # Awesome Embodied AI [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
 
-A curated list of awesome projects, resources, and research related to embodied intelligence and humanoid robotics.
+A curated list of awesome projects, resources, and research related to **Embodied AI** and **Humanoid Robotics**.
 
 ## Contents
 - [Introduction](#introduction)
