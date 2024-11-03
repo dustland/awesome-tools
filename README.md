@@ -44,6 +44,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [Meta-World](https://meta-world.github.io/) - Benchmark for meta-reinforcement learning
 - [RLBench](https://sites.google.com/view/rlbench) - Large-scale robot learning benchmark
 - [ManipulaTHOR](https://ai2thor.allenai.org/manipulathor) - Framework for visual manipulation tasks
+- [RoboFlamingo](https://roboflamingo.github.io/) - Vision-Language Foundation Models as Effective Robot Imitators
 
 ### Motion Planning
 - [MoveIt](https://moveit.ros.org/) - Motion planning framework
