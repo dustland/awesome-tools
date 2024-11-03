@@ -66,6 +66,10 @@ for Visual Robot Manipulation
 - [Human3.6M](http://vision.imar.ro/human3.6m/) - Large-scale dataset for human sensing
 - [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu/)
 
+### Benchmarks
+
+- [Calvin](http://calvin.cs.uni-freiburg.de/) - CALVIN: A Benchmark for Language-Conditioned Policy Learning for Long-Horizon Robot Manipulation Tasks
+
 ## Learning Resources
 
 ### Courses
