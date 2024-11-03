@@ -74,14 +74,10 @@ for Visual Robot Manipulation
 ## Learning Resources
 
 ### Courses
-- [Stanford CS336: Robot Learning](http://cs336.stanford.edu/)
+- [Stanford CS223A: Introduction to Robotics](https://online.stanford.edu/courses/cs223a-introduction-robotics)
 - [Berkeley CS287: Advanced Robotics](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/)
 - [MIT 6.834J: Cognitive Robotics](http://courses.csail.mit.edu/6.834j/)
-
-### Books
-- "Springer Handbook of Robotics" by Bruno Siciliano and Oussama Khatib
-- "Probabilistic Robotics" by Sebastian Thrun, Wolfram Burgard, and Dieter Fox
-- "Reinforcement Learning in Robotics" by Jan Peters
+- [Coursera Robotics](https://www.coursera.org/courses?query=robotics)
 
 ### Tutorials & Blogs
 - [Deep Robot Learning Blog](https://bair.berkeley.edu/blog/categories/robotics/)
@@ -105,15 +101,7 @@ for Visual Robot Manipulation
 
 ## Research Papers
 
-### Survey Papers
-- "A Survey of Deep Learning for Robot Manipulation" (2020)
-- "Deep Reinforcement Learning for Robotic Manipulation" (2019)
-- "Learning Dexterous Manipulation for a Soft Robotic Hand" (2019)
-
-### Key Papers
-- List of seminal papers in chronological order
-- Recent breakthrough papers
-- State-of-the-art methods
+- [OKAMI: Teaching Humanoid Robots Manipulation Skills through Single Video Imitation](https://ut-austin-rpl.github.io/OKAMI/)
 
 ## Community
 
