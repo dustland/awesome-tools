@@ -91,7 +91,7 @@ for Visual Robot Manipulation
 - [Berkeley AI Research (BAIR)](https://bair.berkeley.edu/)
 - [Stanford Robotics & Embodied Artificial Intelligence Lab (REAL)](http://real.stanford.edu/)
 - [MIT CSAIL](https://www.csail.mit.edu/)
-- [Google DeepMind](https://www.deepmind.com/)
+- [UT Austin Robot Perception and Learning Lab (RPL)](https://rpl.cs.utexas.edu/)
 
 ### Companies
 - [Boston Dynamics](https://www.bostondynamics.com/)
