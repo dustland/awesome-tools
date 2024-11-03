@@ -63,7 +63,7 @@ for Visual Robot Manipulation
 - [Google AI Robotics Research](https://ai.google/research/teams/brain/robotics/)
 - [OpenAI Robotics Blog](https://openai.com/blog/tags/robotics/)
 
-## Companies & Robotics
+## Companies & Robots
 
 ### Research Labs
 - [Berkeley AI Research (BAIR)](https://bair.berkeley.edu/)
