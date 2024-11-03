@@ -17,36 +17,15 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ## Open Source Projects
 
-### Humanoid Robotics Platforms
-- [Atlas](https://www.bostondynamics.com/atlas) - Advanced humanoid robot by Boston Dynamics
-- [Digit](https://www.agilityrobotics.com/digit) - Bipedal robot by Agility Robotics
-- [Tesla Optimus](https://www.tesla.com/optimus) - Tesla's humanoid robot project
-- [Figure 01](https://www.figure.ai/) - General purpose humanoid robot
-- [Phoenix](https://github.com/PhoenixNine/Phoenix) - Open-source humanoid robot design
-- [Fourier GR-2](https://www.fftai.com/products-gr2) - Fourier General Purpose Humanoid Robotics
-
 ### Simulation Environments
 - [Isaac Gym](https://developer.nvidia.com/isaac-gym) - NVIDIA's physics simulation environment
 - [MuJoCo](https://mujoco.org/) - Physics engine for robotics, biomechanics, and graphics
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning
 - [Gazebo](http://gazebosim.org/) - Robot simulation environment
 
-### Software Frameworks
-- [ROS](https://www.ros.org/) - Robot Operating System
-- [ROS 2](https://docs.ros.org/en/rolling/) - Next generation of ROS
-- [PyRobot](https://pyrobot.org/) - Python framework for robot learning
-- [DART](http://dartsim.github.io/) - Dynamic Animation and Robotics Toolkit
-
 ## Research Frameworks
 
 ### Learning Frameworks
-- [OpenAI Gym](https://gym.openai.com/) - Toolkit for developing RL algorithms
-- [Meta-World](https://meta-world.github.io/) - Benchmark for meta-reinforcement learning
-- [RLBench](https://sites.google.com/view/rlbench) - Large-scale robot learning benchmark
-- [ManipulaTHOR](https://ai2thor.allenai.org/manipulathor) - Framework for visual manipulation tasks
-- [RoboFlamingo](https://roboflamingo.github.io/) - Vision-Language Foundation Models as Effective Robot Imitators
-
-### Motion Planning
 - [MoveIt](https://moveit.ros.org/) - Motion planning framework
 - [OMPL](https://ompl.kavrakilab.org/) - Open Motion Planning Library
 - [Drake](https://drake.mit.edu/) - Planning and control toolkit
@@ -100,6 +79,14 @@ for Visual Robot Manipulation
 - [Figure AI](https://www.figure.ai/)
 - [1X Technologies](https://www.1x.tech/)
 - [Sanctuary AI](https://www.sanctuary.ai/)
+
+### Humanoid Robotics
+- [Atlas](https://www.bostondynamics.com/atlas) - Advanced humanoid robot by Boston Dynamics
+- [Digit](https://www.agilityrobotics.com/digit) - Bipedal robot by Agility Robotics
+- [Tesla Optimus](https://www.tesla.com/optimus) - Tesla's humanoid robot project
+- [Figure 01](https://www.figure.ai/) - General purpose humanoid robot
+- [Phoenix](https://github.com/PhoenixNine/Phoenix) - Open-source humanoid robot design
+- [Fourier GR-2](https://www.fftai.com/products-gr2) - Fourier General Purpose Humanoid Robotics
 
 ## Research Papers
 
