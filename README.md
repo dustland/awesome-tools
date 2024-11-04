@@ -90,6 +90,7 @@ for Visual Robot Manipulation
 ## Research Papers
 
 - [OKAMI: Teaching Humanoid Robots Manipulation Skills through Single Video Imitation](https://ut-austin-rpl.github.io/OKAMI/)
+- [GR-MG: Leveraging Partially Annotated Data via Multi-Modal Goal Conditioned Policy](https://arxiv.org/abs/2408.14368)
 
 ### Researchers
 
