@@ -21,6 +21,18 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [MuJoCo](https://mujoco.org/) - Physics engine for robotics, biomechanics, and graphics
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning
 - [Gazebo](http://gazebosim.org/) - Robot simulation environment
+- [SAPIEN](https://sapien.ucsd.edu/) - A SimulAted Part-based Interactive ENvironment
+
+### Perceptions
+
+### Teleops & Retargeting
+
+- [AnyTeleop](https://yzqin.github.io/anyteleop/) - A General Vision-Based Dexterous Robot Arm-Hand Teleoperation System
+- [Dex Retargeting](https://github.com/dexsuite/dex-retargeting) - Various retargeting optimizers to translate human hand motion to robot hand motion.
+
+### Feedback Generation
+
+- [ChatTTS](https://github.com/2noise/ChatTTS) - A generative speech model for daily dialogue
 
 ## Research Frameworks
 
