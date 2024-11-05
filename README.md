@@ -6,7 +6,6 @@ A curated list of awesome projects, resources, and research related to **Embodie
 - [Introduction](#introduction)
 - [Open Source Projects](#open-source-projects)
 - [Datasets](#datasets)
-- [Learning Resources](#learning-resources)
 - [Companies & Robots](#companies--robots)
 - [Research Papers](#research-papers)
 - [Community](#community)
@@ -62,19 +61,6 @@ for Visual Robot Manipulation
 
 - [CALVIN](http://calvin.cs.uni-freiburg.de/) - CALVIN: A Benchmark for Language-Conditioned Policy Learning for Long-Horizon Robot Manipulation Tasks
 - [DexYCB](https://dex-ycb.github.io/) - A Benchmark for Capturing Hand Grasping of Objects
-
-## Learning Resources
-
-### Courses
-- [Stanford CS223A: Introduction to Robotics](https://online.stanford.edu/courses/cs223a-introduction-robotics)
-- [Berkeley CS287: Advanced Robotics](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/)
-- [MIT 6.834J: Cognitive Robotics](http://courses.csail.mit.edu/6.834j/)
-- [Coursera Robotics](https://www.coursera.org/courses?query=robotics)
-
-### Tutorials & Blogs
-- [Deep Robot Learning Blog](https://bair.berkeley.edu/blog/categories/robotics/)
-- [Google AI Robotics Research](https://ai.google/research/teams/brain/robotics/)
-- [OpenAI Robotics Blog](https://openai.com/blog/tags/robotics/)
 
 ## Companies & Robots
 
