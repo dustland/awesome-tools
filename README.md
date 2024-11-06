@@ -33,6 +33,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 - [ChatTTS](https://github.com/2noise/ChatTTS) - A generative speech model for daily dialogue
 - [Real3D-Portrait](https://real3dportrait.github.io/) - One-shot Realistic 3D Talking Portrait Synthesis
+- [Hallo2](https://fudan-generative-vision.github.io/hallo2) - Long-Duration and High-Resolution Audio-driven Portrait Image Animation
 
 ## Research Frameworks
 
