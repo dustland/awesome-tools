@@ -126,6 +126,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning
 - [Gazebo](http://gazebosim.org/) - Robot simulation environment
 - [SAPIEN](https://sapien.ucsd.edu/) - A SimulAted Part-based Interactive ENvironment
+- [Genesis](https://genesis-embodied-ai.github.io/) - Genesis is a comprehensive physics simulation platform designed for general purpose Robotics, Embodied AI, & Physical AI applications.
 
 ### Perceptions
 
@@ -144,7 +145,6 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ### Learning Frameworks
 
-- [Genesis](https://genesis-embodied-ai.github.io/) - Genesis is a comprehensive physics simulation platform designed for general purpose Robotics, Embodied AI, & Physical AI applications.
 - [MoveIt](https://moveit.ros.org/) - Motion planning framework
 - [OMPL](https://ompl.kavrakilab.org/) - Open Motion Planning Library
 - [Drake](https://drake.mit.edu/) - Planning and control toolkit
