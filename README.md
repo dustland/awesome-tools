@@ -206,7 +206,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ### Researchers
 
-[Yuke Zhu](https://yukezhu.me) [Yuzhe Qin](https://yzqin.github.io/)
+[Yuke Zhu](https://yukezhu.me) [Yuzhe Qin](https://yzqin.github.io/) [Jim Fan](https://jimfan.me/)
 
 ## Community
 
