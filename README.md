@@ -189,6 +189,8 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [Figure AI](https://www.figure.ai/)
 - [1X Technologies](https://www.1x.tech/)
 - [Sanctuary AI](https://www.sanctuary.ai/)
+- [Foriour Intelligence](https://www.fftai.com) [[Github]](https://github.com/FFTAI/) [[Docs]](https://fftai.github.io/)
+- [AgiBot](https://www.agibot.com/) [Github](https://github.com/AgibotTech)
 
 ### Humanoid Robotics
 
