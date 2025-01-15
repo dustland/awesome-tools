@@ -26,6 +26,13 @@ WORKDIR /app
 # Copy project files
 COPY . /app/
 
+# Initialize Git repository and configure Git
+RUN git init && \
+  git config --global user.email "bot@dustland.ai" && \
+  git config --global user.name "Dustland Bot" && \
+  git add . && \
+  git commit -m "Initial commit"
+
 # Install dependencies
 RUN cd tools && poetry install --no-dev
 
