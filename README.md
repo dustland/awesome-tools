@@ -121,12 +121,12 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ### Simulation Environments
 
+- [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) - Genesis is a physics platform designed for general-purpose Robotics/Embodied AI/Physical AI applications. It is simultaneously multiple things: A universal physics engine re-built from the ground up, capable of simulating a wide range of materials and physical phenomena.; A lightweight, ultra-fast, pythonic, and user-friendly robotics simulation platform. [⭐22747]
 - [Isaac Sim](https://developer.nvidia.com/isaac/sim) - NVIDIA Isaac Sim™ is a reference application built on NVIDIA Omniverse that enables developers to simulate and test AI-driven robotics solutions in physically based virtual environments.
 - [MuJoCo](https://mujoco.org/) - Physics engine for robotics, biomechanics, and graphics
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning
 - [Gazebo](http://gazebosim.org/) - Robot simulation environment
 - [SAPIEN](https://sapien.ucsd.edu/) - A SimulAted Part-based Interactive ENvironment
-- [Genesis](https://genesis-embodied-ai.github.io/) - Genesis is a comprehensive physics simulation platform designed for general purpose Robotics, Embodied AI, & Physical AI applications.
 - [Webots](https://cyberbotics.com/) - Webots is an open source and multi-platform desktop application used to simulate robots. It provides a complete development environment to model, program and simulate robots.
 
 ### Perceptions
@@ -149,8 +149,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 - [MoveIt](https://moveit.ros.org/) - Motion planning framework
 - [OMPL](https://ompl.kavrakilab.org/) - Open Motion Planning Library
 - [Drake](https://drake.mit.edu/) - Planning and control toolkit
-- [GR-1](https://gr1-manipulation.github.io/) - ByteDance Research: Unleashing Large-Scale Video Generative Pre-training
-  for Visual Robot Manipulation
+- [GR-1](https://gr1-manipulation.github.io/) - ByteDance Research: Unleashing Large-Scale Video Generative Pre-training for Visual Robot Manipulation
 - [Universal Manipulation Interface(UMI)](https://umi-gripper.github.io/)
 - [Meta Motivo](https://metamotivo.metademolab.com/demo) - A first-of-its-kind behavioral foundation model to control a virtual physics-based humanoid agent for a wide range of whole-body tasks.
 - [OpenVLA](https://openvla.github.io/) - OpenVLA sets a new state of the art for generalist robot manipulation policies. It supports controlling multiple robots out of the box and can be quickly adapted to new robot setups via parameter-efficient fine-tuning.
