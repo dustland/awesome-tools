@@ -8,6 +8,10 @@ healthcheckEnabled = false  # Since this is a worker process, not a web server
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
+[cron]
+schedule = "0 16 * * *"  # Run at midnight Shanghai time (UTC+8 -> 16:00 UTC)
+command = "cd tools && poetry run python src/main.py"
+
 [variables]
 PYTHON_VERSION = "3.11"
 POETRY_VERSION = "1.7.1"
