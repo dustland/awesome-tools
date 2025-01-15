@@ -4,6 +4,7 @@ from core.github_client import GitHubClient
 from core.content_merger import ContentMerger
 from core.gpt_service import GPTService
 from core.git_manager import GitManager
+from core.content_fetcher import ContentFetcher
 from utils.config import Config
 from utils.logger import logger
 
@@ -23,40 +24,51 @@ def main():
     gpt_service = GPTService(os.getenv("OPENAI_API_KEY"))
     content_merger = ContentMerger("README.md", gpt_service)
     git_manager = GitManager()
+    content_fetcher = ContentFetcher()
     logger.info("All components initialized successfully")
     
     try:
-        # Search for relevant repositories
+        # Fetch content from multiple sources
+        logger.info("Fetching content from multiple sources...")
+        
+        # 1. Fetch from GitHub repositories
         logger.info("Searching for relevant repositories...")
-        repos = github_client.discover_repos("awesome+embodied+ai+robotics")
+        repos = github_client.discover_repos("awesome+embodied+ai")
         logger.info(f"Found {len(repos)} relevant repositories")
         
-        # Process each repository
+        all_content = []
+        
+        # Process GitHub repositories
         for idx, repo in enumerate(repos, 1):
             owner = repo["owner"]["login"]
             name = repo["name"]
             logger.info(f"Processing repository {idx}/{len(repos)}: {owner}/{name}")
             
-            # Fetch and parse README
-            logger.info(f"Fetching README from {owner}/{name}...")
             readme_content = github_client.get_readme_content(owner, name)
             if readme_content:
                 logger.info(f"Successfully fetched README from {owner}/{name}")
-                logger.info("Parsing README content...")
-                parsed_sections = gpt_service.parse_and_format_readme(readme_content)
-                logger.info(f"Successfully parsed README into {len(parsed_sections)} sections")
-                
-                # Merge content
-                logger.info("Attempting to merge content...")
-                if content_merger.merge_content(parsed_sections):
-                    logger.info(f"Successfully merged content from {owner}/{name}")
-                else:
-                    logger.warning(f"No new content merged from {owner}/{name}")
+                all_content.append(readme_content)
             else:
                 logger.warning(f"Failed to fetch README from {owner}/{name}")
         
+        # 2. Fetch from other sources (arXiv, conferences, blogs, labs)
+        logger.info("Fetching content from additional sources...")
+        additional_content = content_fetcher.fetch_all_content()
+        all_content.extend(additional_content)
+        logger.info(f"Successfully fetched {len(additional_content)} items from additional sources")
+        
+        # Merge all content
+        has_updates = False
+        for content in all_content:
+            logger.info("Attempting to merge content...")
+            if content_merger.merge_content(content):
+                logger.info("Successfully merged new content")
+                has_updates = True
+            else:
+                logger.info("No new content to merge from this source")
+        
         # Commit and push changes
-        if git_manager.has_changes():
+        if has_updates and git_manager.has_changes():
             logger.info("Changes detected, committing and pushing...")
             git_manager.commit_and_push("Update awesome list with new resources")
         else:
