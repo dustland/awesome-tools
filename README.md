@@ -152,6 +152,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
   for Visual Robot Manipulation
 - [Universal Manipulation Interface(UMI)](https://umi-gripper.github.io/)
 - [Meta Motivo](https://metamotivo.metademolab.com/demo) - A first-of-its-kind behavioral foundation model to control a virtual physics-based humanoid agent for a wide range of whole-body tasks.
+- [OpenVLA](https://openvla.github.io/) - OpenVLA sets a new state of the art for generalist robot manipulation policies. It supports controlling multiple robots out of the box and can be quickly adapted to new robot setups via parameter-efficient fine-tuning.
 
 ## Datasets
 
