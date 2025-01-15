@@ -20,59 +20,60 @@ def main():
     
     # Initialize components
     logger.info("Initializing components...")
-    github_client = GitHubClient(os.getenv("GITHUB_TOKEN"))
+    github_token = os.getenv("GITHUB_TOKEN")
+    tavily_api_key = os.getenv("TAVILY_API_KEY")
+    
     gpt_service = GPTService(os.getenv("OPENAI_API_KEY"))
-    content_merger = ContentMerger("README.md", gpt_service)
+    content_merger = ContentMerger("../README.md", gpt_service)
     git_manager = GitManager()
-    content_fetcher = ContentFetcher()
+    content_fetcher = ContentFetcher(github_token, tavily_api_key)
     logger.info("All components initialized successfully")
     
     try:
-        # Fetch content from multiple sources
-        logger.info("Fetching content from multiple sources...")
+        # Fetch content using aggregated search
+        logger.info("Fetching content using aggregated search...")
+        all_content = content_fetcher.fetch_all_content()
+        logger.info(f"Found {len(all_content)} relevant items")
         
-        # 1. Fetch from GitHub repositories
-        logger.info("Searching for relevant repositories...")
-        repos = github_client.discover_repos("awesome+embodied+ai")
-        logger.info(f"Found {len(repos)} relevant repositories")
+        # Sort content by impact score
+        all_content.sort(key=lambda x: x.get('impact_score', 0), reverse=True)
+        logger.info("Sorted content by impact score")
         
-        all_content = []
+        # Log top items for visibility
+        logger.info("\nTop 5 items by impact score:")
+        for idx, item in enumerate(all_content[:5], 1):
+            desc = item.get('description', '')[:100] + '...' if item.get('description') else 'No description'
+            logger.info(f"{idx}. {item.get('title')} (Score: {item.get('impact_score', 0):.2f})")
+            logger.info(f"   Type: {item.get('type')}")
+            logger.info(f"   Stars: {item.get('metrics', {}).get('stars', 0)}")
+            if item.get('citations'):
+                logger.info(f"   Citations: {item.get('citations')}")
+            if item.get('relevance_score'):
+                logger.info(f"   Relevance: {item.get('relevance_score'):.2f}")
+            logger.info(f"   Description: {desc}")
         
-        # Process GitHub repositories
-        for idx, repo in enumerate(repos, 1):
-            owner = repo["owner"]["login"]
-            name = repo["name"]
-            logger.info(f"Processing repository {idx}/{len(repos)}: {owner}/{name}")
-            
-            readme_content = github_client.get_readme_content(owner, name)
-            if readme_content:
-                logger.info(f"Successfully fetched README from {owner}/{name}")
-                all_content.append(readme_content)
-            else:
-                logger.warning(f"Failed to fetch README from {owner}/{name}")
-        
-        # 2. Fetch from other sources (arXiv, conferences, blogs, labs)
-        logger.info("Fetching content from additional sources...")
-        additional_content = content_fetcher.fetch_all_content()
-        all_content.extend(additional_content)
-        logger.info(f"Successfully fetched {len(additional_content)} items from additional sources")
-        
-        # Merge all content
+        # Merge content, starting with highest impact
         has_updates = False
         for content in all_content:
-            logger.info("Attempting to merge content...")
-            if content_merger.merge_content(content):
-                logger.info("Successfully merged new content")
+            logger.info(f"\nProcessing: {content.get('title')} (Impact Score: {content.get('impact_score', 0):.2f})")
+            logger.info(f"Type: {content.get('type')}, Stars: {content.get('metrics', {}).get('stars', 0)}")
+            if content.get('citations'):
+                logger.info(f"Citations: {content.get('citations')}")
+            if content.get('relevance_score'):
+                logger.info(f"Relevance: {content.get('relevance_score'):.2f}")
+            
+            if content_merger.merge_content(content.get('content', '')):
+                logger.info(f"Successfully merged content from {content.get('title')}")
                 has_updates = True
             else:
-                logger.info("No new content to merge from this source")
+                logger.info(f"No new content to merge from {content.get('title')}")
         
         # Commit and push changes
         if has_updates and git_manager.has_changes():
-            logger.info("Changes detected, committing and pushing...")
-            git_manager.commit_and_push("Update awesome list with new resources")
+            logger.info("\nChanges detected, committing and pushing...")
+            git_manager.commit_and_push("Update awesome list with new high-impact resources")
         else:
-            logger.info("No changes detected, skipping commit")
+            logger.info("\nNo changes detected, skipping commit")
             
     except Exception as e:
         logger.error(f"Error in main process: {e}")

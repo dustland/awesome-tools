@@ -25,7 +25,7 @@ class GitHubClient:
             logger.error(f"Failed to discover repositories: {e}")
             return []
     
-    def get_readme_content(self, owner: str, repo: str) -> Optional[str]:
+    def fetch_readme(self, owner: str, repo: str) -> Optional[str]:
         """Fetch README content from a repository."""
         url = f"{self.base_url}/repos/{owner}/{repo}/readme"
         

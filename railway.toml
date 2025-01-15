@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd tools && poetry install --no-dev"
+
+[deploy]
+startCommand = "cd tools && poetry run python src/main.py"
+healthcheckEnabled = false  # Since this is a worker process, not a web server
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[variables]
+PYTHON_VERSION = "3.11"
+POETRY_VERSION = "1.7.1"
+NIXPACKS_POETRY_INSTALL_ARGS = "--no-dev"

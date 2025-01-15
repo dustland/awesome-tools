@@ -7,68 +7,48 @@ from utils.config import Config
 class GPTService:
     def __init__(self, api_key: str):
         self.client = openai.OpenAI(api_key=api_key)
-        self.system_prompt = """You are an expert curator for the Awesome Embodied AI list. Your task is to analyze README content and intelligently merge valuable information into our curated list.
+        self.system_prompt = """You are an expert curator for the Awesome Embodied AI list. Your task is to maintain a high-quality, focused list of the most impactful and relevant resources.
 
-CURATION GUIDELINES:
+Rules for Content Curation:
+1. Focus on Quality and Impact
+   - Prioritize high-impact resources (high stars, citations, or industry adoption)
+   - Include emerging projects showing significant promise
+   - Remove outdated or less impactful content to maintain list quality
+   - Keep each section focused with the most valuable entries
 
-1. Content Relevance
-- Only include content directly related to Embodied AI, robotics, and physical intelligence
-- Focus on high-quality, impactful resources
-- Prioritize recent and actively maintained projects
+2. Content Organization
+   - Maintain clear, logical section structure
+   - Create new sections if needed for better organization
+   - Ensure each entry provides clear value to the community
+   - Keep entries well-formatted and consistent
 
-2. Categories to Focus On:
-- Research Papers: Groundbreaking papers in embodied AI
-- Open Source Projects: Significant frameworks, libraries, and tools
-- Datasets: High-quality datasets for embodied AI research
-- Companies & Products: Notable companies and their robotics products
-- Research Labs: Leading institutions in embodied AI
-- Benchmarks: Standard evaluation frameworks
-- Learning Resources: High-quality tutorials and courses
+3. Quality Standards
+   - Each entry must have clear relevance to Embodied AI
+   - Entries should include links to code/papers when available
+   - Descriptions should be technical and informative
+   - Remove entries that are no longer maintained or accessible
 
-3. Entry Quality Standards:
-- Each entry must have a clear, concise description
-- Include relevant links (paper, code, project)
-- Verify that links are valid and accessible
-- Ensure descriptions are informative and technical
-- Remove duplicates or outdated entries
+4. When Removing Content
+   - Only remove entries that are clearly outdated or less impactful
+   - Keep unique/novel contributions even if smaller scale
+   - Preserve foundational papers and tools
+   - Document removal reasoning in commit message
 
-4. Format Requirements:
-- Follow consistent Markdown formatting
-- Maintain alphabetical order within sections
-- Use proper section hierarchy
-- Keep descriptions concise but informative
+5. When Adding Content
+   - Add highly relevant new resources
+   - Place in appropriate sections (create new if needed)
+   - Follow consistent formatting
+   - Include relevant metrics (stars, citations)
 
-5. Merging Logic:
-- Preserve existing high-quality content
-- Add new relevant entries
-- Update outdated information
-- Remove deprecated or inactive projects
-- Merge similar entries
-- Reorganize content for better structure
-
-6. Special Considerations:
-- Prioritize open-source over closed-source projects
-- Include implementation details when relevant
-- Note computational requirements for large models
-- Tag entries with relevant frameworks/technologies
-
-EXAMPLE ENTRY FORMAT:
-```markdown
-- [Project Name](link) - Brief technical description highlighting key features and significance. [Paper](paper_link) [Code](code_link)
-```
-
-Your task is to:
-1. Analyze the incoming README content
-2. Extract relevant information based on our guidelines
-3. Compare with existing content to avoid duplicates
-4. Format entries consistently
-5. Return the merged content maintaining the highest quality standards
-
-Remember: Quality over quantity. Only include entries that truly add value to the Embodied AI community."""
+Remember: The goal is to maintain a valuable, curated list that serves the Embodied AI community. Quality over quantity, but preserve important resources."""
 
     def merge_content(self, current_content: str, new_content: str) -> str:
         """Merge new content into existing content using GPT."""
         try:
+            if not current_content.strip():
+                logger.warning("Current content is empty, cannot merge")
+                return current_content
+
             messages = [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": f"""Here is the current content:
@@ -77,7 +57,13 @@ Remember: Quality over quantity. Only include entries that truly add value to th
 Here is the new content to analyze and potentially merge:
 {new_content}
 
-Please analyze the new content and merge relevant information into the current content following the curation guidelines."""}
+Please analyze both the current and new content. You can:
+1. Add highly relevant new content
+2. Remove outdated or less impactful content
+3. Adjust the structure if needed
+4. Create new sections if appropriate
+
+Focus on maintaining a high-quality, well-organized list. Ensure any removed content is replaced with equal or higher quality entries."""}
             ]
             
             response = self.client.chat.completions.create(
@@ -88,6 +74,26 @@ Please analyze the new content and merge relevant information into the current c
             )
             
             merged_content = response.choices[0].message.content
+            
+            # Safety check: ensure minimum content preservation
+            if len(merged_content) < len(current_content) * 0.5:
+                logger.warning("Merged content is too short, might have lost valuable content")
+                return current_content
+            
+            # Safety check: ensure key content types are preserved
+            content_indicators = [
+                "github.com",  # GitHub repositories
+                "arxiv.org",   # Research papers
+                "doi.org"      # Academic references
+            ]
+            
+            current_indicators = sum(1 for indicator in content_indicators if indicator in current_content)
+            merged_indicators = sum(1 for indicator in content_indicators if indicator in merged_content)
+            
+            if merged_indicators < current_indicators * 0.7:  # Allow some reduction but not too much
+                logger.warning("Merged content has lost too many valuable references")
+                return current_content
+            
             logger.info("Successfully merged content using GPT")
             return merged_content
             
