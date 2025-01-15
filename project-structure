@@ -1,0 +1,24 @@
+awesome-embodied-ai/
+├── tools/
+│   ├── src/
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── github_client.py
+│   │   │   ├── content_merger.py
+│   │   │   ├── gpt_service.py
+│   │   │   └── git_manager.py
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── logger.py
+│   │   │   └── config.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── content_types.py
+│   │   └── main.py
+│   ├── tests/
+│   ├── config/
+│   │   └── config.yaml
+│   ├── pyproject.toml
+│   └── .env.example
+├── README.md
+└── .gitignore 
