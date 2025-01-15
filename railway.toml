@@ -1,6 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd tools && poetry install --no-dev"
+buildCommand = """
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="/root/.local/bin:$PATH"
+cd tools && poetry install --no-dev
+"""
 
 [deploy]
 startCommand = "cd tools && poetry run python src/main.py"
