@@ -52,21 +52,34 @@ def main():
                 logger.info(f"   Relevance: {item.get('relevance_score'):.2f}")
             logger.info(f"   Description: {desc}")
         
+        # Prepare content for merging
+        formatted_content = []
+        for item in all_content:
+            # Format content in the expected table structure
+            if item.get('type') == 'research':
+                paper_link = next((link for link in item.get('links', []) if 'arxiv.org' in link or 'doi.org' in link), '')
+                code_link = next((link for link in item.get('links', []) if 'github.com' in link), '')
+                formatted_content.append(
+                    f"| {item.get('title')} | {item.get('description', '')} | "
+                    f"[Paper]({paper_link}) | [Code]({code_link}) |"
+                )
+            else:
+                # Format as a list item for tools, products, etc.
+                main_link = item.get('links', [''])[0]
+                stars = item.get('metrics', {}).get('stars', 0)
+                formatted_content.append(
+                    f"- [{item.get('title')}]({main_link}) - {item.get('description', '')} "
+                    f"[⭐{stars}]"
+                )
+        
         # Merge content, starting with highest impact
         has_updates = False
-        for content in all_content:
-            logger.info(f"\nProcessing: {content.get('title')} (Impact Score: {content.get('impact_score', 0):.2f})")
-            logger.info(f"Type: {content.get('type')}, Stars: {content.get('metrics', {}).get('stars', 0)}")
-            if content.get('citations'):
-                logger.info(f"Citations: {content.get('citations')}")
-            if content.get('relevance_score'):
-                logger.info(f"Relevance: {content.get('relevance_score'):.2f}")
-            
-            if content_merger.merge_content(content.get('content', '')):
-                logger.info(f"Successfully merged content from {content.get('title')}")
+        if formatted_content:
+            if content_merger.merge_content("\n".join(formatted_content)):
+                logger.info("Successfully merged formatted content")
                 has_updates = True
             else:
-                logger.info(f"No new content to merge from {content.get('title')}")
+                logger.info("No new content to merge")
         
         # Commit and push changes
         if has_updates and git_manager.has_changes():

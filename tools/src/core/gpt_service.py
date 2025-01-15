@@ -9,38 +9,40 @@ class GPTService:
         self.client = openai.OpenAI(api_key=api_key)
         self.system_prompt = """You are an expert curator for the Awesome Embodied AI list. Your task is to maintain a high-quality, focused list of the most impactful and relevant resources.
 
-Rules for Content Curation:
-1. Focus on Quality and Impact
-   - Prioritize high-impact resources (high stars, citations, or industry adoption)
-   - Include emerging projects showing significant promise
-   - Remove outdated or less impactful content to maintain list quality
-   - Keep each section focused with the most valuable entries
+Rules for Content Structure:
+1. Maintain Existing Format
+   - Keep the exact table structure for papers: | Name | Description | Paper | Code |
+   - Keep the list format for tools and products: - [Name](link) - Description [⭐Stars]
+   - Preserve all existing sections and their hierarchy
+   - Keep the table headers and alignment exactly as they are
 
 2. Content Organization
-   - Maintain clear, logical section structure
-   - Create new sections if needed for better organization
-   - Ensure each entry provides clear value to the community
-   - Keep entries well-formatted and consistent
+   - Place papers in appropriate paper sections (Survey, LLM-Driven, Robotics, etc.)
+   - Place tools in the Open Source Projects section
+   - Place products in the Companies & Products section
+   - Create new subsections only if truly needed
 
 3. Quality Standards
-   - Each entry must have clear relevance to Embodied AI
-   - Entries should include links to code/papers when available
-   - Descriptions should be technical and informative
-   - Remove entries that are no longer maintained or accessible
+   - Each entry must be directly related to Embodied AI
+   - Papers must have either arxiv/doi links or GitHub implementations
+   - Tools must have active GitHub repositories
+   - Descriptions should be technical and concise
 
-4. When Removing Content
-   - Only remove entries that are clearly outdated or less impactful
-   - Keep unique/novel contributions even if smaller scale
+4. When Merging Content
+   - Add new high-impact content in the appropriate sections
+   - Keep entries organized alphabetically within sections
+   - Remove outdated or less relevant content
    - Preserve foundational papers and tools
-   - Document removal reasoning in commit message
+   - Maintain table alignment and formatting
 
-5. When Adding Content
-   - Add highly relevant new resources
-   - Place in appropriate sections (create new if needed)
-   - Follow consistent formatting
-   - Include relevant metrics (stars, citations)
+5. Content Format Examples:
+   Paper entry:
+   | GPT4V | MLM(Image+Language->Language) | [Paper](https://arxiv.org/abs/2303.08774) | |
 
-Remember: The goal is to maintain a valuable, curated list that serves the Embodied AI community. Quality over quantity, but preserve important resources."""
+   Tool entry:
+   - [Isaac Sim](https://developer.nvidia.com/isaac-sim) - NVIDIA's robotics simulator with photorealistic rendering [⭐5000]
+
+Remember: The goal is to maintain a valuable, well-organized list that serves the Embodied AI community. Preserve the exact formatting while ensuring high-quality content."""
 
     def merge_content(self, current_content: str, new_content: str) -> str:
         """Merge new content into existing content using GPT."""
@@ -57,13 +59,14 @@ Remember: The goal is to maintain a valuable, curated list that serves the Embod
 Here is the new content to analyze and potentially merge:
 {new_content}
 
-Please analyze both the current and new content. You can:
-1. Add highly relevant new content
-2. Remove outdated or less impactful content
-3. Adjust the structure if needed
-4. Create new sections if appropriate
+Please analyze both the current and new content. Your task is to:
+1. Add relevant new content to appropriate sections
+2. Maintain exact table and list formatting
+3. Keep entries organized alphabetically within sections
+4. Remove less impactful content if needed
+5. Preserve the structure and hierarchy
 
-Focus on maintaining a high-quality, well-organized list. Ensure any removed content is replaced with equal or higher quality entries."""}
+Focus on maintaining a high-quality, well-organized list while preserving the exact formatting."""}
             ]
             
             response = self.client.chat.completions.create(
@@ -92,6 +95,11 @@ Focus on maintaining a high-quality, well-organized list. Ensure any removed con
             
             if merged_indicators < current_indicators * 0.7:  # Allow some reduction but not too much
                 logger.warning("Merged content has lost too many valuable references")
+                return current_content
+            
+            # Safety check: ensure table structure is preserved
+            if "| ----------" not in merged_content and "| ----------" in current_content:
+                logger.warning("Merged content has lost table formatting")
                 return current_content
             
             logger.info("Successfully merged content using GPT")
