@@ -121,7 +121,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ### Simulation Environments
 
-- [Isaac Gym](https://developer.nvidia.com/isaac-gym) - NVIDIA's physics simulation environment
+- [Isaac Sim](https://developer.nvidia.com/isaac/sim) - NVIDIA Isaac Sim™ is a reference application built on NVIDIA Omniverse that enables developers to simulate and test AI-driven robotics solutions in physically based virtual environments.
 - [MuJoCo](https://mujoco.org/) - Physics engine for robotics, biomechanics, and graphics
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning
 - [Gazebo](http://gazebosim.org/) - Robot simulation environment
