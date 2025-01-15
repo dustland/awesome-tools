@@ -1,10 +1,14 @@
 import os
+from dotenv import load_dotenv
 from core.github_client import GitHubClient
 from core.content_merger import ContentMerger
 from core.gpt_service import GPTService
 from core.git_manager import GitManager
 from utils.config import Config
 from utils.logger import logger
+
+# Load environment variables from .env file
+load_dotenv()
 
 def main():
     # Load configuration
@@ -18,7 +22,7 @@ def main():
     
     try:
         # Search for relevant repositories
-        repos = github_client.search_repos("awesome+embodied+ai+robotics")
+        repos = github_client.discover_repos("awesome+embodied+ai+robotics")
         
         # Process each repository
         for repo in repos:
