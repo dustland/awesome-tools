@@ -12,26 +12,51 @@ from utils.logger import logger
 load_dotenv()
 
 def main():
-    logger.info("Starting Awesome Embodied AI content update process...")
+    logger.info("=== Starting Awesome Embodied AI content update process ===")
     
     # Load configuration
+    logger.info("Loading configuration...")
     config = Config.load_config()
     logger.info("Configuration loaded successfully")
     
     # Initialize components
     logger.info("Initializing components...")
     github_token = os.getenv("GITHUB_TOKEN")
+    if not github_token:
+        logger.error("GITHUB_TOKEN environment variable not set")
+        return
+        
     tavily_api_key = os.getenv("TAVILY_API_KEY")
-    
-    gpt_service = GPTService(os.getenv("OPENAI_API_KEY"))
-    content_merger = ContentMerger(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "README.md"), gpt_service)
-    git_manager = GitManager()
-    content_fetcher = ContentFetcher(github_token, tavily_api_key)
-    logger.info("All components initialized successfully")
+    if not tavily_api_key:
+        logger.error("TAVILY_API_KEY environment variable not set")
+        return
+        
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OPENAI_API_KEY environment variable not set")
+        return
     
     try:
-        # Fetch content using aggregated search
-        logger.info("Fetching content using aggregated search...")
+        logger.info("Initializing GPT service...")
+        gpt_service = GPTService(openai_api_key)
+        
+        logger.info("Initializing Git manager...")
+        git_manager = GitManager(target_repo_url="https://github.com/dustland/awesome-embodied-ai")
+        
+        logger.info("Initializing content merger...")
+        content_merger = ContentMerger(git_manager.get_readme_path(), gpt_service)
+        
+        logger.info("Initializing content fetcher...")
+        content_fetcher = ContentFetcher(github_token, tavily_api_key)
+        
+        logger.info("All components initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing components: {str(e)}")
+        return
+    
+    # Fetch content
+    logger.info("Fetching content using aggregated search...")
+    try:
         all_content = content_fetcher.fetch_all_content()
         logger.info(f"Found {len(all_content)} relevant items")
         
@@ -39,20 +64,25 @@ def main():
         all_content.sort(key=lambda x: x.get('impact_score', 0), reverse=True)
         logger.info("Sorted content by impact score")
         
-        # Log top items for visibility
+        # Log top 5 items
         logger.info("\nTop 5 items by impact score:")
-        for idx, item in enumerate(all_content[:5], 1):
-            desc = item.get('description', '')[:100] + '...' if item.get('description') else 'No description'
-            logger.info(f"{idx}. {item.get('title')} (Score: {item.get('impact_score', 0):.2f})")
-            logger.info(f"   Type: {item.get('type')}")
+        for i, item in enumerate(all_content[:5], 1):
+            logger.info(f"{i}. {item.get('title', 'No title')} (Score: {item.get('impact_score', 0):.2f})")
+            logger.info(f"   Type: {item.get('type', 'unknown')}")
             logger.info(f"   Stars: {item.get('metrics', {}).get('stars', 0)}")
-            if item.get('citations'):
-                logger.info(f"   Citations: {item.get('citations')}")
-            if item.get('relevance_score'):
-                logger.info(f"   Relevance: {item.get('relevance_score'):.2f}")
-            logger.info(f"   Description: {desc}")
-        
-        # Prepare content for merging
+            if 'citations' in item:
+                logger.info(f"   Citations: {item['citations']}")
+            if 'relevance_score' in item:
+                logger.info(f"   Relevance: {item['relevance_score']:.2f}")
+            logger.info(f"   Description: {item.get('description', '')[:100]}...")
+            
+    except Exception as e:
+        logger.error(f"Error fetching content: {str(e)}")
+        return
+    
+    # Prepare content for merging
+    try:
+        logger.info("\nPreparing content for merging...")
         formatted_content = []
         for item in all_content:
             # Format content in the expected table structure
@@ -72,7 +102,15 @@ def main():
                     f"[⭐{stars}]"
                 )
         
-        # Merge content, starting with highest impact
+        logger.info("Content prepared for merging")
+        
+    except Exception as e:
+        logger.error(f"Error preparing content for merging: {str(e)}")
+        return
+    
+    # Merge content
+    try:
+        logger.info("\nMerging content with existing README...")
         has_updates = False
         if formatted_content:
             if content_merger.merge_content("\n".join(formatted_content)):
@@ -89,10 +127,10 @@ def main():
             logger.info("\nNo changes detected, skipping commit")
             
     except Exception as e:
-        logger.error(f"Error in main process: {e}")
-        raise
-    
-    logger.info("Content update process completed")
+        logger.error(f"Error updating content: {str(e)}")
+        return
+        
+    logger.info("\n=== Content update process completed successfully ===")
 
 if __name__ == "__main__":
-    main() 
+    main()
