@@ -1,10 +1,14 @@
 from typing import Dict, List
+import os
 from utils.logger import logger
 from core.gpt_service import GPTService
 
 class ContentMerger:
     def __init__(self, readme_path: str, gpt_service: GPTService):
-        self.readme_path = readme_path
+        # Ensure we're targeting the root README.md, not the tools one
+        self.readme_path = os.path.abspath(readme_path)
+        if os.path.basename(os.path.dirname(self.readme_path)) == "tools":
+            raise ValueError("README path should point to root README.md, not tools/README.md")
         self.gpt_service = gpt_service
         
     def merge_content(self, new_content: str) -> bool:

@@ -121,7 +121,7 @@ Embodied Intelligence refers to AI systems that learn and interact through physi
 
 ### Simulation Environments
 
-- [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) - Genesis is a physics platform designed for general-purpose Robotics/Embodied AI/Physical AI applications. It is simultaneously multiple things: A universal physics engine re-built from the ground up, capable of simulating a wide range of materials and physical phenomena.; A lightweight, ultra-fast, pythonic, and user-friendly robotics simulation platform. [⭐22747]
+- [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) - Genesis is a physics platform designed for general-purpose Robotics/Embodied AI/Physical AI applications. It is simultaneously multiple things: A universal physics engine re-built from the ground up, capable of simulating a wide range of materials and physical phenomena.; A lightweight, ultra-fast, pythonic, and user-friendly robotics simulation platform. [⭐23061]
 - [Isaac Sim](https://developer.nvidia.com/isaac/sim) - NVIDIA Isaac Sim™ is a reference application built on NVIDIA Omniverse that enables developers to simulate and test AI-driven robotics solutions in physically based virtual environments.
 - [MuJoCo](https://mujoco.org/) - Physics engine for robotics, biomechanics, and graphics
 - [PyBullet](https://pybullet.org/) - Physics simulation for robotics and machine learning

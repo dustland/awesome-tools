@@ -21,8 +21,8 @@ class GitManager:
             self.repo.index.commit(message)
             
             # Push to remote
-            origin = self.repo.remote('origin')
-            origin.push()
+            main = self.repo.remote('main')
+            main.push()
             
             logger.info("Successfully committed and pushed changes")
             return True
