@@ -1,7 +1,7 @@
 from typing import Dict, List
 import os
 from utils.logger import logger
-from core.gpt_service import GPTService
+from awesome_updater.core.gpt_service import GPTService
 
 class ContentMerger:
     def __init__(self, readme_path: str, gpt_service: GPTService):

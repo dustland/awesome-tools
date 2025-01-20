@@ -1,12 +1,13 @@
+import os
 from typing import Dict, List, Optional
-import openai
-from models.content_types import Content
+from openai import OpenAI
 from utils.logger import logger
 from utils.config import Config
+from models.content_types import Content
 
 class GPTService:
     def __init__(self, api_key: str):
-        self.client = openai.OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key)
         self.system_prompt = """You are an expert curator for the Awesome Embodied AI list. Your task is to maintain a high-quality, focused list of the most impactful and relevant resources.
 
 Rules for Content Structure:

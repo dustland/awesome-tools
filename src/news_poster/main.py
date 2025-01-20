@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from core.news_poster import NewsPoster
+from news_poster import NewsPoster
 from utils.logger import logger
 
 def main():

@@ -1,17 +1,18 @@
+import os
+from typing import Dict, List, Optional
 import arxiv
 import requests
-import re
-from bs4 import BeautifulSoup
-from typing import List, Dict, Optional, Tuple
+from tavily import Client
 from utils.logger import logger
 from datetime import datetime
-from tavily import TavilyClient
+from bs4 import BeautifulSoup
 import pytz
+import re
 
 class ContentFetcher:
     def __init__(self, github_token: str, tavily_api_key: str = None):
         self.github_token = github_token
-        self.tavily_client = TavilyClient(tavily_api_key) if tavily_api_key else None
+        self.tavily_client = Client(tavily_api_key) if tavily_api_key else None
         self.headers = {
             "Authorization": f"Bearer {github_token}",
             "Accept": "application/vnd.github.v3+json"
@@ -44,6 +45,7 @@ class ContentFetcher:
             try:
                 # 1. Search using Tavily API
                 if self.tavily_client:
+                    logger.info(f"Searching using Tavily API for {search['query']}...")
                     tavily_results = self._tavily_search(
                         search['query'], 
                         search['search_type'],
@@ -217,25 +219,50 @@ class ContentFetcher:
     def _get_github_metrics(self, github_url: str) -> Dict:
         """Get GitHub repository metrics."""
         try:
-            match = re.match(r'https?://github\.com/([^/]+)/([^/]+)', github_url)
+            # Skip URLs that are clearly not repository URLs
+            if any(invalid_path in github_url for invalid_path in [
+                '/features/', '/apps/', '/settings/', '/marketplace/',
+                'github.blog', 'help.github.com', 'docs.github.com'
+            ]):
+                return {}
+            
+            # Extract owner and repo using a more specific regex
+            match = re.match(r'https?://github\.com/([^/\s]+)/([^/\s#?]+)', github_url)
             if not match:
                 return {}
             
             owner, repo = match.groups()
+            # Skip if owner or repo looks invalid
+            if not owner or not repo or len(owner) < 1 or len(repo) < 1:
+                return {}
+            
+            # Clean up repo name (remove any trailing parts)
+            repo = repo.split('#')[0].split('?')[0]
+            
             api_url = f"https://api.github.com/repos/{owner}/{repo}"
             
             response = requests.get(api_url, headers=self.headers)
             response.raise_for_status()
             data = response.json()
             
+            # Only return metrics if we got valid data
+            if not isinstance(data, dict) or 'message' in data:
+                return {}
+                
             return {
                 'stars': data.get('stargazers_count', 0),
                 'forks': data.get('forks_count', 0),
                 'updated_at': data.get('updated_at'),
                 'created_at': data.get('created_at')
             }
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            if hasattr(e.response, 'status_code') and e.response.status_code == 404:
+                # Silently ignore 404 errors as they're expected for invalid repos
+                return {}
             logger.error(f"Error fetching GitHub metrics for {github_url}: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Unexpected error fetching GitHub metrics for {github_url}: {e}")
             return {}
 
     def _calculate_impact_score(self, content: Dict) -> float:

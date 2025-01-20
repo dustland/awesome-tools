@@ -1,10 +1,14 @@
 [tool.poetry]
-name = "awesome-embodied-ai"
+name = "awesome-tools"
 version = "0.1.0"
-description = "A tool to automatically curate and merge awesome lists related to Embodied AI"
-authors = ["Dustland <hi@dustland.ai>"]
+description = "Tools for maintaining the Awesome Embodied AI list"
+authors = ["Dustland Team"]
 readme = "README.md"
-packages = [{include = "src"}]
+repository = "https://github.com/dustland/awesome-tools"
+packages = [{include = "utils", from = "src"},
+           {include = "models", from = "src"},
+           {include = "awesome_updater", from = "src"},
+           {include = "news_poster", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -36,7 +40,8 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-update-awesome = "src.main:main"
+awesome_updater = "awesome_updater.main:main"
+news_poster = "news_poster.main:main"
 
 [tool.black]
 line-length = 100
@@ -58,4 +63,4 @@ check_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=src --cov-report=term-missing" 
+addopts = "-v --cov=src --cov-report=term-missing"

@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
-from core.github_client import GitHubClient
-from core.content_merger import ContentMerger
-from core.gpt_service import GPTService
-from core.git_manager import GitManager
-from core.content_fetcher import ContentFetcher
+from awesome_updater.core.github_client import GitHubClient
+from awesome_updater.core.content_merger import ContentMerger
+from awesome_updater.core.gpt_service import GPTService
+from awesome_updater.core.git_manager import GitManager
+from awesome_updater.core.content_fetcher import ContentFetcher
 from utils.config import Config
 from utils.logger import logger
 
@@ -24,7 +24,7 @@ def main():
     tavily_api_key = os.getenv("TAVILY_API_KEY")
     
     gpt_service = GPTService(os.getenv("OPENAI_API_KEY"))
-    content_merger = ContentMerger("../README.md", gpt_service)
+    content_merger = ContentMerger(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "README.md"), gpt_service)
     git_manager = GitManager()
     content_fetcher = ContentFetcher(github_token, tavily_api_key)
     logger.info("All components initialized successfully")
