@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_HOME="/opt/poetry" \
-  PYTHONPATH=/app \
+  PYTHONPATH=/app/src \
   PATH="/opt/poetry/bin:$PATH"
 
 WORKDIR /app
@@ -28,8 +28,12 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
 # Copy only the necessary files first
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
-RUN poetry install --no-dev
+# Create src directory structure
+RUN mkdir -p src/awesome_updater src/utils src/models
+
+# Install dependencies and install the package in development mode
+RUN poetry install --no-dev && \
+  poetry install
 
 # Copy the rest of the application
 COPY . .
@@ -40,4 +44,4 @@ RUN git init && \
   git config --global user.name "Dustland Bot"
 
 # Command to run the script
-CMD ["poetry", "run", "awesome_updater"] 
+CMD ["poetry", "run", "python", "-m", "awesome_updater.main"] 
