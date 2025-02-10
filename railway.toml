@@ -4,7 +4,7 @@ restartPolicyMaxRetries = 3
 
 [cron.content_update]
 schedule = "0 16 * * *"
-command = "poetry run python src/awesome_updater/main.py"
+command = "poetry run awesome_updater"
 
 [cron.news_posting]
 schedule = "0 1 * * *"

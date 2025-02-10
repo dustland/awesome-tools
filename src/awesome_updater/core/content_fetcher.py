@@ -24,17 +24,17 @@ class ContentFetcher:
         
         searches = [
             {
-                'query': 'latest embodied AI robotics research papers 2024 2023 github implementation',
+                'query': 'latest embodied AI robotics research papers 2025 2024 github implementation',
                 'type': 'research',
                 'search_type': 'tech'
             },
             {
-                'query': 'new embodied AI robotics simulator tools github released:>2023',
+                'query': 'new embodied AI robotics simulator tools github released:>2024',
                 'type': 'tools',
                 'search_type': 'tech'
             },
             {
-                'query': 'latest embodied AI humanoid robotics products news 2024 2023',
+                'query': 'latest embodied AI humanoid robotics products news 2025 2024',
                 'type': 'product',
                 'search_type': 'news'
             }

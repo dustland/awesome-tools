@@ -9,7 +9,9 @@ ENV PYTHONFAULTHANDLER=1 \
   POETRY_VERSION=1.7.1 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
-  PATH="/root/.local/bin:$PATH"
+  PYTHONPATH=/app
+
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,21 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
-# Set working directory
-WORKDIR /app
+# Copy only the necessary files first
+COPY pyproject.toml poetry.lock ./
 
-# Copy project files
-COPY . /app/
+# Install dependencies
+RUN poetry install --no-dev
+
+# Copy the rest of the application
+COPY . .
 
 # Initialize Git repository and configure Git
 RUN git init && \
   git config --global user.email "bot@dustland.ai" && \
-  git config --global user.name "Dustland Bot" && \
-  git add . && \
-  git commit -m "Initial commit"
+  git config --global user.name "Dustland Bot"
 
-# Install dependencies
-RUN cd tools && poetry install --no-dev
-
-# Set the default command
-CMD ["sh", "-c", "cd tools && poetry run python src/main.py"] 
+# Command to run the script
+CMD ["poetry", "run", "awesome_updater"] 

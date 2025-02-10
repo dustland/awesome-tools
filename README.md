@@ -43,21 +43,26 @@ src/
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/dustland/awesome-tools.git
 cd awesome-tools
 ```
 
 2. Install dependencies using Poetry:
+
 ```bash
 poetry install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env
 ```
+
 Edit `.env` file and fill in your API keys and configuration:
+
 - `GITHUB_TOKEN`: Your GitHub API token
 - `OPENAI_API_KEY`: Your OpenAI API key
 - `TAVILY_API_KEY`: Your Tavily API key
@@ -73,12 +78,10 @@ The content updater tool searches for new content and updates the Awesome Embodi
 ```bash
 # Using the script command
 poetry run awesome_updater
-
-# Or using the Python file directly
-poetry run python src/awesome_updater/main.py
 ```
 
 This will:
+
 1. Search for new relevant content using Tavily API
 2. Fetch GitHub metrics and research papers
 3. Use GPT to evaluate and format new content
@@ -88,18 +91,21 @@ This will:
 #### Automated Updates (Railway.app)
 
 The tool is configured to run automatically on Railway.app with the following schedule:
+
 - Content updates: Daily at midnight Shanghai time (UTC+8)
 - News posting: Daily at 9 AM Shanghai time (UTC+8)
 
 To deploy on Railway.app:
+
 1. Create a new project
 2. Connect your GitHub repository
 3. Set up the required environment variables
 4. The cron jobs will automatically start running based on the schedule in `railway.toml`
 
 ## Tools Description
-   - `news_poster/` - Tool for posting news to X/Twitter
-   - `readme_updater/` - Tool for updating the README file
+
+- `awesome_updater/` - Tool for updating the README file in the Awesome Embodied AI repository
+- [WIP] `news_poster/` - Tool for posting news to X/Twitter
 
 ## Setup
 
