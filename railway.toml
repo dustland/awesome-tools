@@ -3,9 +3,9 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 [cron.content_update]
-schedule = "0 16 * * *"
+schedule = "0 */6 * * *"
 command = "poetry run awesome_updater"
 
 [cron.news_posting]
-schedule = "0 1 * * *"
-command = "poetry run python tools/src/post_news.py"
+schedule = "0 */24 * * *"
+command = "poetry run news_poster"
