@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import arxiv
 import requests
 from tavily import Client
@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import pytz
 import re
+from utils.logger import logger
 
 class ContentFetcher:
     def __init__(self, github_token: str, tavily_api_key: str = None):
@@ -17,100 +18,39 @@ class ContentFetcher:
             "Authorization": f"Bearer {github_token}",
             "Accept": "application/vnd.github.v3+json"
         }
+        self.important_authors = [
+            "Yann LeCun", "Sergey Levine", "Pieter Abbeel", "Chelsea Finn",
+            "Lerrel Pinto", "Ashish Kumar", "Jitendra Malik"
+        ]
+        self.important_venues = [
+            "ICML", "NeurIPS", "ICLR", "RSS", "CoRL", "ICRA", "IROS"
+        ]
+        self.important_labs = [
+            "Meta AI", "Google Research", "DeepMind", "BAIR", "Stanford REAL",
+            "CMU RED", "MIT CSAIL"
+        ]
         
-    def fetch_all_content(self) -> List[Dict]:
+    def fetch_all_content(self) -> List[Dict[Any, Any]]:
         """Fetch content using aggregated search approach with focus on recent updates."""
         all_content = []
         
-        searches = [
-            {
-                'query': 'latest embodied AI robotics research papers 2025 2024 github implementation',
-                'type': 'research',
-                'search_type': 'tech'
-            },
-            {
-                'query': 'new embodied AI robotics simulator tools github released:>2024',
-                'type': 'tools',
-                'search_type': 'tech'
-            },
-            {
-                'query': 'latest embodied AI humanoid robotics products news 2025 2024',
-                'type': 'product',
-                'search_type': 'news'
-            }
-        ]
+        # Fetch arXiv papers
+        arxiv_papers = self._fetch_arxiv_papers()
+        all_content.extend(arxiv_papers)
         
-        total_searches = len(searches) * (2 if self.tavily_client else 1)  # Each search does Tavily + GitHub
-        completed_searches = 0
+        # Fetch from important labs' websites
+        lab_content = self._fetch_lab_content()
+        all_content.extend(lab_content)
         
-        for search in searches:
-            try:
-                # 1. Search using Tavily API with time filtering
-                if self.tavily_client:
-                    logger.info(f"[{completed_searches + 1}/{total_searches}] Searching Tavily for {search['type']}: {search['query']}")
-                    tavily_results = self._tavily_search(
-                        search['query'], 
-                        search['search_type'],
-                        search['type']
-                    )
-                    if tavily_results:
-                        all_content.extend(tavily_results)
-                        logger.info(f"Added {len(tavily_results)} results from Tavily {search['type']} search")
-                    completed_searches += 1
-                
-                # 2. Search GitHub with time filtering
-                logger.info(f"[{completed_searches + 1}/{total_searches}] Searching GitHub for {search['type']}: {search['query']}")
-                github_results = self._github_search(search['query'])
-                processed_github = self._process_github_results(github_results, search['type'])
-                # Filter for recent updates
-                recent_github = [
-                    item for item in processed_github 
-                    if self._is_recent_content(item.get('metrics', {}).get('updated_at'))
-                ]
-                if recent_github:
-                    all_content.extend(recent_github)
-                    logger.info(f"Added {len(recent_github)} results from GitHub {search['type']} search")
-                completed_searches += 1
-                
-                # 3. Search arXiv for research papers if needed
-                if search['type'] == 'research':
-                    logger.info(f"Searching arXiv for research papers...")
-                    arxiv_results = self._arxiv_search(search['query'])
-                    # Filter for recent papers
-                    recent_arxiv = [
-                        item for item in arxiv_results 
-                        if self._is_recent_content(item.get('metrics', {}).get('published_date'))
-                    ]
-                    if recent_arxiv:
-                        all_content.extend(recent_arxiv)
-                        logger.info(f"Added {len(recent_arxiv)} results from arXiv search")
-                
-            except Exception as e:
-                logger.error(f"Error during {search['type']} search: {str(e)}")
-                continue
+        # Fetch GitHub repositories
+        github_repos = self._fetch_github_repos()
+        all_content.extend(github_repos)
         
-        # Remove duplicates based on URLs
-        seen_urls = set()
-        unique_content = []
+        # Calculate impact scores
         for item in all_content:
-            urls = set(item.get('links', []))
-            if not urls.intersection(seen_urls):
-                unique_content.append(item)
-                seen_urls.update(urls)
+            item['impact_score'] = self._calculate_impact_score(item)
         
-        # Sort by impact score
-        scored_content = []
-        for content in unique_content:
-            try:
-                content['impact_score'] = self._calculate_impact_score(content)
-                scored_content.append(content)
-            except Exception as e:
-                logger.error(f"Error calculating impact score: {str(e)}")
-                continue
-        
-        scored_content.sort(key=lambda x: x.get('impact_score', 0), reverse=True)
-        logger.info(f"Final content count: {len(scored_content)} items")
-        return scored_content
+        return all_content
         
     def _is_recent_content(self, date_str: Optional[str], months: int = 6) -> bool:
         """Check if content is recent (within specified months)."""
@@ -378,103 +318,72 @@ class ContentFetcher:
             logger.error(f"Unexpected error fetching GitHub metrics for {github_url}: {e}")
             return {}
 
-    def _calculate_impact_score(self, content: Dict) -> float:
+    def _calculate_impact_score(self, item: Dict[Any, Any]) -> float:
         """Calculate impact score based on various metrics with emphasis on content value."""
-        metrics = content.get('metrics', {})
+        score = 0.0
         
-        # Base score calculation
-        base_score = 0.0
+        # Author impact (0-3 points)
+        if any(author in self.important_authors for author in item.get('authors', [])):
+            score += 3.0
+            
+        # Venue impact (0-2 points)
+        if any(venue in item.get('description', '') for venue in self.important_venues):
+            score += 2.0
+            
+        # Lab/Institution impact (0-2 points)
+        if any(lab in item.get('description', '') for lab in self.important_labs):
+            score += 2.0
+            
+        # Recency impact (0-1 points)
+        if 'published_date' in item:
+            days_old = (datetime.now() - item['published_date']).days
+            recency_score = max(0, 1 - (days_old / 365))  # Linear decay over a year
+            score += recency_score
+            
+        # GitHub stars impact (0-2 points)
+        if 'metrics' in item and 'stars' in item['metrics']:
+            stars = item['metrics']['stars']
+            stars_score = min(2.0, stars / 1000)  # Up to 2 points, scales with stars
+            score += stars_score
         
-        # GitHub metrics if available
-        if content.get('has_code', False):
-            stars = metrics.get('stars', 0)
-            forks = metrics.get('forks', 0)
-            base_score += (stars * 1.0 + forks * 0.5) / 100  # Normalize large numbers
-        else:
-            # Base score for non-code content
-            base_score += 0.5  # Give a reasonable base score
+        return score
+
+    def _fetch_arxiv_papers(self) -> List[Dict[Any, Any]]:
+        search_queries = [
+            'ti:"embodied ai" OR ti:"world model" OR ti:"foundation model" robotics',
+            'ti:"physical intelligence" OR ti:"humanoid" OR ti:"manipulation"',
+            'cat:cs.RO AND (ti:"learning" OR ti:"neural" OR ti:"deep")'
+        ]
         
-        # Recency factors
-        now = datetime.now(pytz.UTC)
-        
-        # Get the most relevant date
-        reference_date = None
-        if content.get('published_date'):
-            try:
-                reference_date = datetime.fromisoformat(content['published_date'].replace('Z', '+00:00'))
-            except:
-                pass
+        papers = []
+        for query in search_queries:
+            search = arxiv.Search(
+                query=query,
+                max_results=100,
+                sort_by=arxiv.SortCriterion.SubmittedDate
+            )
+            
+            for paper in search.results():
+                # Check if paper is from important authors or venues
+                is_important = any(author in self.important_authors for author in paper.authors)
                 
-        if not reference_date and metrics.get('updated_at'):
-            try:
-                reference_date = datetime.fromisoformat(metrics['updated_at'].replace('Z', '+00:00'))
-            except:
-                pass
-                
-        if not reference_date and metrics.get('created_at'):
-            try:
-                reference_date = datetime.fromisoformat(metrics['created_at'].replace('Z', '+00:00'))
-            except:
-                pass
+                papers.append({
+                    'title': paper.title,
+                    'authors': [str(author) for author in paper.authors],
+                    'description': paper.summary,
+                    'links': [paper.pdf_url],
+                    'type': 'research',
+                    'published_date': paper.published,
+                    'is_important': is_important
+                })
         
-        # Calculate age factor
-        days_old = (now - reference_date).days if reference_date else 1000
-        
-        # Adjust decay rate based on content type
-        if content.get('is_social', False):
-            age_factor = max(0.1, 2.0 - (days_old / 30))  # Faster decay for social
-        elif content.get('is_research', False):
-            age_factor = max(0.1, 2.0 - (days_old / 180))  # Slower decay for research
-        else:
-            age_factor = max(0.1, 2.0 - (days_old / 90))  # Medium decay for other content
-        
-        # Citations impact (especially important for research without code)
-        citations = content.get('citations', 0)
-        if content.get('is_research', False):
-            citations_factor = 1.0 + (citations / 50)  # More weight to citations for research
-        else:
-            citations_factor = 1.0 + (citations / 100)
-        
-        # Content type specific boosts
-        type_boosts = {
-            'research': 1.3 if not content.get('has_code', False) else 1.2,  # Higher boost for pure research
-            'tools': 1.2 if content.get('has_code', False) else 1.1,        # Higher boost for tools with code
-            'product': 1.1                                                   # Standard boost for products
-        }
-        type_boost = type_boosts.get(content.get('type', ''), 1.0)
-        
-        # Social media adjustments
-        if content.get('is_social', False):
-            if days_old <= 7:  # Very recent social content
-                type_boost *= 1.5
-            elif days_old <= 30:  # Recent social content
-                type_boost *= 1.2
-            else:  # Older social content
-                type_boost *= 0.7
-        
-        # Relevance boost from search results
-        relevance_score = content.get('relevance_score', 0.5)
-        relevance_boost = 0.5 + relevance_score  # Scale from 0.5 to 1.5
-        
-        # Calculate final score with adjusted weights
-        impact_score = (
-            base_score * 0.3 +         # Base/GitHub score
-            age_factor * 0.3 +         # Recency
-            citations_factor * 0.2 +    # Citations (increased weight)
-            relevance_boost * 0.2      # Search relevance (increased weight)
-        ) * type_boost                 # Type-specific boost
-        
-        # Log scoring details
-        logger.debug(f"Impact score calculation for {content.get('title', 'Unknown')}:")
-        logger.debug(f"  - Base Score: {base_score:.2f}")
-        logger.debug(f"  - Age Factor: {age_factor:.2f}")
-        logger.debug(f"  - Citations Factor: {citations_factor:.2f}")
-        logger.debug(f"  - Type Boost: {type_boost:.2f}")
-        logger.debug(f"  - Relevance Boost: {relevance_boost:.2f}")
-        logger.debug(f"  - Is Research: {content.get('is_research', False)}")
-        logger.debug(f"  - Has Code: {content.get('has_code', False)}")
-        logger.debug(f"  - Is Social: {content.get('is_social', False)}")
-        logger.debug(f"  - Days Old: {days_old}")
-        logger.debug(f"  - Final Score: {impact_score:.2f}")
-        
-        return impact_score
+        return papers
+
+    def _fetch_lab_content(self) -> List[Dict[Any, Any]]:
+        # Implementation to fetch from lab websites
+        # This would require specific scrapers for each lab's website
+        pass
+
+    def _fetch_github_repos(self) -> List[Dict[Any, Any]]:
+        # Implementation to fetch relevant GitHub repositories
+        pass
