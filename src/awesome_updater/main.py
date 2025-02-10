@@ -123,6 +123,14 @@ def main():
         if has_updates and git_manager.has_changes():
             logger.info("\nChanges detected, committing and pushing...")
             git_manager.commit_and_push("Update awesome list with new high-impact resources")
+            
+            # After content is merged but before committing
+            logger.info("New content to be added:")
+            for item in all_content:
+                logger.info(f"- {item.get('title')}")
+                logger.info(f"  Authors: {item.get('authors', 'Unknown')}")
+                logger.info(f"  Link: {item.get('links', [''])[0]}")
+                logger.info(f"  Summary: {item.get('description', '')[:100]}...")
         else:
             logger.info("\nNo changes detected, skipping commit")
             
