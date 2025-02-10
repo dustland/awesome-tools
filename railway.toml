@@ -2,11 +2,10 @@
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
-[cron]
-# Content update at midnight Shanghai time (UTC+8)
-content_update = "0 16 * * *"
+[cron.content_update]
+schedule = "0 16 * * *"
 command = "poetry run python src/awesome_updater/main.py"
 
-# News posting at 9 AM Shanghai time (UTC+8)
-news_posting = "0 1 * * *"
+[cron.news_posting]
+schedule = "0 1 * * *"
 command = "poetry run python tools/src/post_news.py"
