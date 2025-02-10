@@ -7,12 +7,49 @@ class NewsPoster:
     def __init__(self, tavily_api_key: str, twitter_api_key: str, twitter_api_secret: str, 
                  twitter_access_token: str, twitter_access_token_secret: str):
         self.tavily_client = TavilyClient(tavily_api_key)
-        self.twitter_client = tweepy.Client(
-            consumer_key=twitter_api_key,
-            consumer_secret=twitter_api_secret,
-            access_token=twitter_access_token,
-            access_token_secret=twitter_access_token_secret
-        )
+        logger.debug(f"Initializing Twitter client with credentials:")
+        logger.debug(f"API Key length: {len(twitter_api_key)}")
+        logger.debug(f"API Secret length: {len(twitter_api_secret)}")
+        logger.debug(f"Access Token length: {len(twitter_access_token)}")
+        logger.debug(f"Access Token Secret length: {len(twitter_access_token_secret)}")
+        
+        try:
+            # First, try to get a bearer token
+            auth = tweepy.OAuthHandler(twitter_api_key, twitter_api_secret)
+            auth.set_access_token(twitter_access_token, twitter_access_token_secret)
+            
+            # Create API v1.1 instance
+            self.twitter_api = tweepy.API(auth)
+            
+            # Create v2 client with bearer token
+            self.twitter_client = tweepy.Client(
+                consumer_key=twitter_api_key,
+                consumer_secret=twitter_api_secret,
+                access_token=twitter_access_token,
+                access_token_secret=twitter_access_token_secret,
+                wait_on_rate_limit=True
+            )
+            
+            # Test the credentials using v1.1 API first
+            try:
+                me_v1 = self.twitter_api.verify_credentials()
+                logger.debug(f"Successfully authenticated with v1.1 API as: {me_v1.screen_name}")
+            except Exception as e:
+                logger.warning(f"V1.1 API authentication failed: {str(e)}")
+            
+            # Then test v2 credentials
+            try:
+                me_v2 = self.twitter_client.get_me()
+                logger.debug(f"Successfully authenticated with v2 API as: {me_v2.data.username}")
+            except Exception as e:
+                logger.warning(f"V2 API authentication failed: {str(e)}")
+                # If both authentications fail, raise the error
+                if not hasattr(self, 'twitter_api'):
+                    raise
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Twitter client: {str(e)}")
+            raise
         
     def fetch_top_news(self) -> List[Dict]:
         """Fetch top 3 news about Embodied AI using Tavily."""
@@ -24,8 +61,7 @@ class NewsPoster:
                     'techcrunch.com', 'wired.com', 'ieee.org', 'nature.com', 
                     'science.org', 'robotics.org', 'technologyreview.com'
                 ],
-                max_results=10,  # Get more results to filter the best ones
-                sort_by="relevance"
+                max_results=10  # Get more results to filter the best ones
             )
             
             # Filter and sort results
@@ -64,9 +100,19 @@ class NewsPoster:
                 if len(tweet) > 280:
                     tweet = tweet[:277] + "..."
                 
-                # Post tweet
-                self.twitter_client.create_tweet(text=tweet)
-                logger.info(f"Posted tweet about: {item['title']}")
+                try:
+                    # Try v2 API first
+                    response = self.twitter_client.create_tweet(text=tweet)
+                    tweet_id = response.data['id']
+                    logger.info(f"Posted tweet (v2) about: {item['title']}")
+                except Exception as e:
+                    logger.warning(f"V2 API failed, trying v1.1: {str(e)}")
+                    # Fallback to v1.1 API
+                    status = self.twitter_api.update_status(tweet)
+                    tweet_id = status.id
+                    logger.info(f"Posted tweet (v1.1) about: {item['title']}")
+                
+                logger.debug(f"Tweet ID: {tweet_id}")
             
             return True
             
