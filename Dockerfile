@@ -38,10 +38,13 @@ RUN poetry install --no-dev && \
 # Copy the rest of the application
 COPY . .
 
+# Make run script executable
+RUN chmod +x run.sh
+
 # Initialize Git repository and configure Git
 RUN git init && \
   git config --global user.email "bot@dustland.ai" && \
   git config --global user.name "Dustland Bot"
 
-# Command to run the script
-CMD ["poetry", "run", "python", "-m", "awesome_updater.main"] 
+# Command to run both scripts
+CMD ["./run.sh"] 
