@@ -2,7 +2,8 @@ from typing import Dict, List, Any
 import os
 import re
 from utils.logger import logger
-from awesome_updater.core.gpt_service import GPTService
+from utils.gpt_service import GPTService
+from awesome_updater.core.awesome_gpt_service import AwesomeGPTService
 
 class ContentMerger:
     def __init__(self, readme_path: str, gpt_service: GPTService):
@@ -10,7 +11,11 @@ class ContentMerger:
         self.readme_path = os.path.abspath(readme_path)
         if os.path.basename(os.path.dirname(self.readme_path)) == "tools":
             raise ValueError("README path should point to root README.md, not tools/README.md")
-        self.gpt_service = gpt_service
+            
+        # Initialize specialized GPT service
+        self.awesome_gpt = AwesomeGPTService(gpt_service)
+        
+        # Define section headers
         self.sections = {
             'foundation_models': '## Foundation Models & World Models',
             'perception': '## Perception & Understanding',
@@ -22,30 +27,28 @@ class ContentMerger:
         }
         
     def merge_content(self, new_content: str) -> bool:
-        """Merge new content into existing README."""
+        """Merge new content into the README file."""
         try:
-            # Read existing content
+            # Read current content
             with open(self.readme_path, 'r', encoding='utf-8') as f:
                 current_content = f.read()
-
-            # Organize new content by section
-            organized_content = self._organize_content(new_content)
             
-            # Update each section
-            updated_content = current_content
-            for section, content in organized_content.items():
-                updated_content = self._update_section(updated_content, section, content)
-
-            # Write back if changed
-            if updated_content != current_content:
+            # Merge content using specialized GPT service
+            merged_content = self.awesome_gpt.merge_content(current_content, new_content)
+            
+            # If content was successfully merged and changed
+            if merged_content and merged_content != current_content:
+                # Write merged content back to file
                 with open(self.readme_path, 'w', encoding='utf-8') as f:
-                    f.write(updated_content)
+                    f.write(merged_content)
+                logger.info("Successfully merged and wrote new content")
                 return True
+            else:
+                logger.info("No changes needed in content")
+                return False
                 
-            return False
-
         except Exception as e:
-            logger.error(f"Error merging content: {str(e)}")
+            logger.error(f"Error merging content: {e}")
             return False
     
     def _organize_content(self, content: str) -> Dict[str, List[str]]:
