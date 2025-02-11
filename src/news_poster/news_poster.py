@@ -91,6 +91,7 @@ class NewsPoster:
     
     def post_to_twitter(self, news_items: List[Dict]) -> bool:
         """Post news items to Twitter/X."""
+        success = True
         try:
             for item in news_items:
                 # Create tweet text
@@ -106,15 +107,31 @@ class NewsPoster:
                     tweet_id = response.data['id']
                     logger.info(f"Posted tweet (v2) about: {item['title']}")
                 except Exception as e:
-                    logger.warning(f"V2 API failed, trying v1.1: {str(e)}")
-                    # Fallback to v1.1 API
-                    status = self.twitter_api.update_status(tweet)
-                    tweet_id = status.id
-                    logger.info(f"Posted tweet (v1.1) about: {item['title']}")
+                    error_msg = str(e).lower()
+                    if "duplicate" in error_msg:
+                        logger.warning(f"Skipping duplicate tweet: {item['title']}")
+                        continue
+                    elif "403 forbidden" in error_msg:
+                        logger.error("Twitter API access level insufficient. Please upgrade to Pro/Enterprise access level.")
+                        return False
+                    else:
+                        logger.warning(f"V2 API failed, trying v1.1: {str(e)}")
+                        try:
+                            # Fallback to v1.1 API
+                            status = self.twitter_api.update_status(tweet)
+                            tweet_id = status.id
+                            logger.info(f"Posted tweet (v1.1) about: {item['title']}")
+                        except Exception as e1:
+                            if "duplicate" in str(e1).lower():
+                                logger.warning(f"Skipping duplicate tweet: {item['title']}")
+                                continue
+                            else:
+                                logger.error(f"Both APIs failed to post tweet: {str(e1)}")
+                                success = False
                 
                 logger.debug(f"Tweet ID: {tweet_id}")
             
-            return True
+            return success
             
         except Exception as e:
             logger.error(f"Error posting to Twitter: {e}")
