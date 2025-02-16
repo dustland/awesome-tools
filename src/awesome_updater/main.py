@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from awesome_updater.core.github_client import GitHubClient
 from awesome_updater.core.content_merger import ContentMerger
-from awesome_updater.core.gpt_service import GPTService
+from utils.gpt_service import GPTService
 from awesome_updater.core.git_manager import GitManager
 from awesome_updater.core.content_fetcher import ContentFetcher
 from utils.config import Config
