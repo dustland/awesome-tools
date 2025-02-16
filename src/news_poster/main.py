@@ -7,16 +7,31 @@ from news_poster.news_poster import NewsPoster
 def main():
     """Main function to run the news posting process."""
     try:
-        # Find and load environment variables
-        env_path = Path(__file__).resolve().parents[2] / '.env'
-        logger.debug(f"Looking for .env file at: {env_path}")
-        if not env_path.exists():
-            logger.error(f"Could not find .env file at {env_path}")
+        # Try multiple environment sources
+        # 1. Check system environment variables first
+        # 2. Try local .env file as fallback for development
+        env_loaded = False
+        
+        # Check if variables are already set in system environment
+        if any(os.getenv(var) for var in ['OPENAI_API_KEY', 'TAVILY_API_KEY', 'TWITTER_API_KEY']):
+            logger.debug("Found environment variables in system environment")
+            env_loaded = True
+        
+        # Try loading from .env file as fallback
+        if not env_loaded:
+            env_path = Path(__file__).resolve().parents[2] / '.env'
+            logger.debug(f"Looking for .env file at: {env_path}")
+            if env_path.exists():
+                logger.debug(f"Found .env file at: {env_path}")
+                load_dotenv(env_path)
+                env_loaded = True
+            else:
+                logger.debug(f"No .env file found at {env_path}")
+        
+        if not env_loaded:
+            logger.error("Could not load environment variables from any source")
             return 1
-        
-        logger.debug(f"Found .env file at: {env_path}")
-        load_dotenv(env_path)
-        
+            
         # Debug: Print first few characters of each env var
         logger.debug("Environment variables loaded:")
         for var_name in ['OPENAI_API_KEY', 'TAVILY_API_KEY', 'TWITTER_API_KEY']:
