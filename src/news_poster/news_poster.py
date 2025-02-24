@@ -59,7 +59,8 @@ class NewsPoster:
         try:
             response = self.tavily_client.search(
                 query="embodied AI robotics latest news and developments",
-                search_depth="news",  # Use news search
+                search_depth="advanced",  # Use news search
+                topic="news",
                 include_domains=[
                     'techcrunch.com', 'wired.com', 'ieee.org', 'nature.com', 
                     'science.org', 'robotics.org', 'technologyreview.com',
@@ -191,8 +192,8 @@ The comment should demonstrate expertise and encourage engagement with the origi
         """Fetch top tweets about Embodied AI using Tavily."""
         try:
             response = self.tavily_client.search(
-                query="embodied AI robotics from:twitter.com OR from:x.com",
-                search_depth="news",
+                query="embodied AI robotics",
+                search_depth="advanced",
                 include_domains=['twitter.com', 'x.com'],
                 max_results=5  # Get more results to filter the best ones
             )
