@@ -12,16 +12,16 @@ from utils.logger import logger
 load_dotenv()
 
 
-def initialize_components(config: Config):
+def initialize_components(config: dict):
     """Initialize all necessary components and services."""
     logger.info("Initializing components...")
     
-    github_token = os.getenv("GITHUB_TOKEN")
-    tavily_api_key = os.getenv("TAVILY_API_KEY")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    github_token = config['github_token']
+    tavily_api_key = config['tavily_api_key']
+    openai_api_key = config['openai_api_key']
 
     if not all([github_token, tavily_api_key, openai_api_key]):
-        missing = [var for var, val in [("GITHUB_TOKEN", github_token), ("TAVILY_API_KEY", tavily_api_key), ("OPENAI_API_KEY", openai_api_key)] if not val]
+        missing = [var for var, val in [("github_token", github_token), ("tavily_api_key", tavily_api_key), ("openai_api_key", openai_api_key)] if not val]
         logger.error(f"Missing environment variables: {', '.join(missing)}")
         raise ValueError("Required environment variables are not set.")
 
@@ -36,8 +36,8 @@ def initialize_components(config: Config):
         content_merger = ContentMerger(git_manager.get_readme_path(), gpt_service)
         
         logger.info("Initializing content fetcher...")
-        logger.info(f"Initializing content fetcher with {len(config.content_sources)} sources...")
-        content_fetcher = ContentFetcher(config.content_sources, config.github_token, gpt_service)
+        logger.info(f"Initializing content fetcher with {len(config['content_sources'])} sources...")
+        content_fetcher = ContentFetcher(config['content_sources'], config['github_token'], gpt_service)
         logger.info("Content fetcher initialized.")
         
         logger.info("All components initialized successfully")
