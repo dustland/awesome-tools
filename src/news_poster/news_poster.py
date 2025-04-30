@@ -6,6 +6,12 @@ from utils.gpt_service import GPTService
 import random
 import time
 
+# Constants
+MAX_NEWS_POSTS_PER_RUN = 2
+MAX_TWEET_ENGAGEMENTS_PER_RUN = 3 # Includes retweets, replies, likes
+RECENT_POST_FETCH_COUNT = 30 # How many recent posts to fetch for duplicate checks
+GPT_DUPLICATE_CHECK_COUNT = 15 # How many recent posts to send to GPT for semantic check
+
 class NewsPoster:
     def __init__(self, tavily_api_key: str, twitter_api_key: str, twitter_api_secret: str, 
                  twitter_access_token: str, twitter_access_token_secret: str, openai_api_key: str):
@@ -50,30 +56,33 @@ class NewsPoster:
                 logger.debug(f"Successfully authenticated with v2 API as: {me_v2.data.username} (ID: {self.user_id})")
             except Exception as e:
                 logger.warning(f"V2 API authentication failed: {str(e)}")
-                # If both authentications fail, raise the error
-                if not hasattr(self, 'twitter_api'):
-                    raise
+                if not hasattr(self, 'twitter_api'): raise
             
             if not self.user_id:
-                 logger.warning("Could not determine bot's Twitter User ID via V2 API. Duplicate checking will be disabled.")
+                 logger.warning("Could not determine bot's Twitter User ID. Duplicate checking might be less effective.")
 
         except Exception as e:
             logger.error(f"Failed to initialize Twitter client: {str(e)}")
             raise
         
-    def fetch_top_news(self) -> List[Dict]:
-        """Fetch top 3 news about Embodied AI using Tavily."""
+    def fetch_supplementary_news(self) -> List[Dict]:
+        """Fetch top news from various sources (excluding Twitter) as supplementary content."""
+        logger.debug("Fetching supplementary news links...")
         try:
+            # Expanded list of reputable domains (excluding twitter.com)
+            include_domains = [
+                'techcrunch.com', 'wired.com', 'theverge.com', 'venturebeat.com',
+                'arxiv.org', 'ieee.org', 'nature.com', 'science.org', 
+                'mit.edu', 'stanford.edu', 'berkeley.edu', # University AI labs
+                'openai.com', 'deepmind.google', 'ai.meta.com', # AI Research blogs
+                'robotics.org', 'technologyreview.com', 'wsj.com', 'bloomberg.com'
+            ]
             response = self.tavily_client.search(
-                query="embodied AI robotics latest news and developments",
-                search_depth="advanced",  # Use news search
-                topic="news",
-                include_domains=[
-                    'techcrunch.com', 'wired.com', 'ieee.org', 'nature.com', 
-                    'science.org', 'robotics.org', 'technologyreview.com',
-                    'twitter.com', 'facebook.com', 'linkedin.com'  # Add social media platforms
-                ],
-                max_results=15 # Get slightly more to allow for filtering duplicates
+                query="embodied AI OR robotics LATEST developments OR research OR breakthroughs",
+                search_depth="advanced",
+                topic="news", # Focus on news/research articles
+                include_domains=include_domains,
+                max_results=10 # Fetch a few candidates
             )
             
             # Filter and sort results
@@ -81,38 +90,27 @@ class NewsPoster:
             seen_urls = set()
             for item in response.get('results', []):
                 url = item.get('url')
-                if not url or url in seen_urls: continue # Skip items without URL or duplicate URLs
+                if not url or url in seen_urls: continue
                 seen_urls.add(url)
-                
-                # Calculate a simple relevance score
                 relevance = item.get('score', 0)
                 content_lower = (item.get('content', '') + item.get('title', '')).lower()
-                if 'embodied' in content_lower:
-                    relevance *= 1.5
-                if 'robot' in content_lower:
-                    relevance *= 1.2
-                    
+                if 'embodied' in content_lower: relevance *= 1.5
+                if 'robot' in content_lower: relevance *= 1.2
+                if 'research' in content_lower or 'arxiv' in url: relevance *= 1.1
                 news_items.append({
-                    'title': item.get('title'),
-                    'url': url,
-                    'published_date': item.get('published_date'),
-                    'content': item.get('content'), # Keep content for similarity check
-                    'relevance': relevance
+                    'title': item.get('title'), 'url': url, 'content': item.get('content'),
+                    'published_date': item.get('published_date'), 'relevance': relevance
                 })
-            
-            # Sort by relevance
             news_items.sort(key=lambda x: x.get('relevance', 0), reverse=True)
-            logger.debug(f"Found {len(news_items)} unique news items initially.")
-            # Return more items initially, duplicate check will filter later
-            return news_items[:5] # Fetch top 5 potential items
+            logger.debug(f"Found {len(news_items)} supplementary news items.")
+            return news_items[:5] # Return top candidates
             
         except Exception as e:
-            logger.error(f"Error fetching news: {e}")
+            logger.error(f"Error fetching supplementary news: {e}")
             return []
 
     def generate_attractive_text(self, title: str) -> str:
         """Generate a more attractive version of the article title using GPTService."""
-        # Use the existing method in GPTService
         return self.gpt_service.generate_attractive_title(title)
 
     def generate_engaging_comment(self, tweet_text: str, tweet_url: str) -> str:
@@ -167,8 +165,9 @@ Instructions:
             logger.error(f"Failed to generate engaging comment: {e}")
             return "Interesting perspective! Thanks for sharing." # Generic fallback
 
-    def fetch_recent_posts_texts(self, count: int = 20) -> List[str]:
-        """Fetch the text content of the bot's own recent tweets."""
+
+    def fetch_recent_posts_texts(self, count: int = RECENT_POST_FETCH_COUNT) -> List[str]:
+        """Fetch the text content of the bot's own recent tweets/retweets."""
         if not self.user_id:
             logger.warning("Cannot fetch recent posts: User ID not available.")
             return []
@@ -187,17 +186,23 @@ Instructions:
             logger.error(f"Error fetching recent tweets: {e}")
             return []
 
-    def is_news_item_duplicate(self, news_item: Dict, recent_texts: List[str]) -> bool:
-        """Use GPT to check if a news item is semantically similar to recent posts."""
+    def is_duplicate(self, item_url: str, item_title: str, item_content: str, recent_texts: List[str]) -> bool:
+        """Check if an item (URL or content) is a duplicate of recent posts."""
         if not recent_texts:
-            return False # Cannot be duplicate if no recent texts
+            return False
 
-        item_summary = f"Title: {news_item.get('title', '')}\nContent Snippet: {news_item.get('content', '')[:200]}..." # Use title and snippet
-        
-        # Limit number of recent texts to check against to keep prompt reasonable
-        texts_to_check = "\n---\n".join(recent_texts[:10]) # Check against last 10
+        # 1. Check for exact URL match in recent posts
+        if item_url:
+            for text in recent_texts:
+                if item_url in text:
+                    logger.warning(f"Skipping duplicate: URL {item_url} found in recent post.")
+                    return True
 
-        prompt = f"""Analyze the following 'New Item' and the 'Recent Posts'. Determine if the core news story or event described in the 'New Item' is substantively the same as any of the 'Recent Posts', even if the source or wording is different.
+        # 2. Perform semantic check using GPT if URL check passed
+        item_summary = f"Title: {item_title}\nContent Snippet: {item_content[:200]}..."
+        texts_to_check = "\n---\n".join(recent_texts[:GPT_DUPLICATE_CHECK_COUNT])
+
+        prompt = f"""Analyze the following 'New Item' and the 'Recent Posts'. Determine if the core news story, event, or link described in the 'New Item' is substantively the same as any of the 'Recent Posts', even if the source or wording is different.
 
 New Item:
 {item_summary}
@@ -205,248 +210,227 @@ New Item:
 Recent Posts:
 {texts_to_check}
 
-Is the core news story in the 'New Item' already covered in the 'Recent Posts'? Answer ONLY with 'Yes' or 'No'."""
-
-        system_prompt = "You are an AI assistant helping to avoid posting duplicate news content. Analyze the semantic similarity of the core event described."
+Is the core news story or link in the 'New Item' already covered in the 'Recent Posts'? Answer ONLY with 'Yes' or 'No'."""
+        system_prompt = "You are an AI assistant helping to avoid posting duplicate news content. Analyze the semantic similarity of the core event or link described."
 
         try:
-            response = self.gpt_service.complete(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                max_tokens=10, # Yes/No answer
-                temperature=0.1 # Low temp for consistent Yes/No
-            )
-            
+            response = self.gpt_service.complete(prompt=prompt, system_prompt=system_prompt, max_tokens=10, temperature=0.1)
             result = response.strip().lower() if response else "no"
-            logger.debug(f"Duplicate check for '{news_item.get('title', '')[:50]}...': GPT response '{result}'")
-            return result == 'yes'
+            is_semantic_duplicate = result == 'yes'
+            if is_semantic_duplicate:
+                 logger.warning(f"Skipping duplicate (semantic match): '{item_title[:50]}...' ")
+            return is_semantic_duplicate
         except Exception as e:
             logger.error(f"Error during GPT duplicate check: {e}")
             return False # Default to not duplicate on error
 
-    def post_to_twitter(self, news_items: List[Dict]) -> bool:
-        """Post news items to Twitter/X, checking for duplicates."""
-        if not news_items:
-            logger.info("No news items fetched to consider for posting.")
-            return True
+    def post_supplementary_news(self, news_items: List[Dict], recent_texts: List[str], posts_needed: int) -> int:
+        """Post supplementary news links if needed, checking for duplicates."""
+        if not news_items or posts_needed <= 0:
+            logger.info("No supplementary news items to post or no posts needed.")
+            return 0
 
-        # Fetch recent posts for duplicate checking (only if user_id is available)
-        recent_posts_texts = self.fetch_recent_posts_texts() if self.user_id else []
-        
-        logger.info(f"Considering {len(news_items)} potential news items for posting...")
-        success = True
+        logger.info(f"Considering {len(news_items)} supplementary news items to fill {posts_needed} slot(s)...")
         posted_count = 0
-        max_posts_per_run = 3 # Limit posts per run to avoid spamming
         base_hashtags = ["#EmbodiedAI", "#Robotics", "#AI", "#ArtificialIntelligence"]
-        optional_hashtags = ["#Tech", "#Innovation", "#FutureTech", "#MachineLearning", "#DeepLearning"]
+        optional_hashtags = ["#Tech", "#Innovation", "#FutureTech", "#MachineLearning", "#DeepLearning", "#Research"]
 
         for item in news_items:
-            if posted_count >= max_posts_per_run:
-                logger.info(f"Reached max posts limit ({max_posts_per_run}), stopping further posts for this run.")
-                break
-
+            if posted_count >= posts_needed:
+                break # Stop if we've filled the needed slots
+            
             try:
-                # Check for duplicates before processing further
-                if recent_posts_texts and self.is_news_item_duplicate(item, recent_posts_texts):
-                    logger.warning(f"Skipping duplicate news item (similar to recent posts): {item['title']}")
+                # Check for duplicates (URL and semantic)
+                if self.is_duplicate(item.get('url'), item.get('title'), item.get('content'), recent_texts):
                     continue
 
-                # Generate a more attractive title/opening
                 attractive_title = self.generate_attractive_text(item['title'])
-                
-                # Randomly select 2-3 relevant hashtags
                 num_hashtags = random.randint(2, 3)
                 current_hashtags = random.sample(base_hashtags + optional_hashtags, num_hashtags)
                 hashtags_str = " ".join(current_hashtags)
-
-                # Construct tweet text (ensure it fits 280 chars)
-                available_chars = 280 - (len(item['url']) + len(hashtags_str) + 5) 
-                
-                if len(attractive_title) > available_chars:
-                    tweet_body = attractive_title[:available_chars-3] + "..."
-                else:
-                    tweet_body = attractive_title
-                    
+                available_chars = 280 - (len(item['url']) + len(hashtags_str) + 5)
+                tweet_body = attractive_title[:available_chars-3] + "..." if len(attractive_title) > available_chars else attractive_title
                 tweet_text = f"{tweet_body}\n\n{item['url']}\n{hashtags_str}"
                 
-                # Add small random delay before posting
                 time.sleep(random.uniform(2, 8))
-                
                 try:
-                    # Post using v2 client
                     response = self.twitter_client.create_tweet(text=tweet_text)
                     tweet_id = response.data['id']
-                    logger.info(f"Successfully posted tweet ID: {tweet_id} for news: {item['title']}")
-                    logger.debug(f"Tweet Text: {tweet_text}")
+                    logger.info(f"Successfully posted supplementary news tweet ID: {tweet_id} for: {item['title']}")
                     posted_count += 1
-                    # Add newly posted text to recent texts to avoid self-duplication within the same run
-                    recent_posts_texts.insert(0, tweet_text) 
+                    recent_texts.insert(0, tweet_text) # Update recent texts
                 except tweepy.errors.TweepyException as e:
-                    if "duplicate content" in str(e).lower() or "status is a duplicate" in str(e).lower() or e.api_codes == [187]:
-                        logger.warning(f"Skipping duplicate tweet via API error for: {item['title']}")
-                        # Even if API catches duplicate, add to recent list to help semantic check
-                        recent_posts_texts.insert(0, tweet_text) 
+                    if e.api_codes == [187]: # Duplicate tweet error from API
+                        logger.warning(f"Skipping duplicate supplementary news post via API error for: {item['title']}")
+                        recent_texts.insert(0, tweet_text) # Still add to check list
                         continue
-                    else:
-                        raise e 
-                        
+                    else: raise e 
             except Exception as e:
-                logger.error(f"Failed to process or post news item '{item.get('title', 'N/A')}': {e}")
-                success = False
+                logger.error(f"Failed to process supplementary news item '{item.get('title', 'N/A')}': {e}")
                 continue 
         
-        logger.info(f"Finished posting phase. Posted {posted_count} items.")
-        return success
+        logger.info(f"Finished posting supplementary news. Posted {posted_count} items.")
+        return posted_count
 
-    def fetch_top_tweets(self) -> List[Dict]:
-        """Fetch top tweets about Embodied AI using Tavily."""
+    def fetch_top_tweets_for_engagement(self) -> List[Dict]:
+        """Fetch top tweets specifically for engagement (retweeting, replying, liking)."""
+        logger.debug("Fetching tweets for potential engagement...")
         try:
             response = self.tavily_client.search(
-                query="embodied AI robotics conversation OR discussion OR opinion",
+                query='("embodied AI" OR "robotics") (discussion OR conversation OR interesting thread OR new research OR breakthrough OR opinion)',
                 search_depth="advanced",
-                # topic="social", # Removed this potentially problematic parameter
-                max_results=20 # Get more to find relevant ones
+                # Removed topic="social"
+                max_results=25 # Get a good pool of candidates
             )
             
             tweet_items = []
             urls_seen = set()
-            
             for item in response.get('results', []):
                 url = item.get('url', '')
                 if not url or 'twitter.com' not in url or '/status/' not in url:
                     continue
-                
                 content_lower = (item.get('content', '') + item.get('title', '')).lower()
-                if 'embodied' not in content_lower and 'robot' not in content_lower:
+                # Slightly broader keyword check for engagement candidates
+                if 'embodied' not in content_lower and 'robot' not in content_lower and ' ai ' not in content_lower:
                      continue
-
                 try:
                     tweet_id = url.split('/status/')[1].split('?')[0]
                     if not tweet_id.isdigit(): continue
-                except IndexError:
-                    continue
-
-                if url in urls_seen:
-                    continue
+                except IndexError: continue
+                if url in urls_seen: continue
                 urls_seen.add(url)
-                
+                # Simple relevance: prioritize keywords, slightly deprioritize replies?
                 relevance = item.get('score', 0) 
-                relevance += 1 if 'embodied' in content_lower else 0
-                relevance += 0.5 if 'robot' in content_lower else 0
-                relevance += 1 if 'discussion' in content_lower else 0
-                relevance += 1 if 'opinion' in content_lower else 0
-                
+                relevance += 2 if 'embodied' in content_lower else 0
+                relevance += 1 if 'robot' in content_lower else 0
+                relevance += 1 if 'research' in content_lower or 'breakthrough' in content_lower else 0
+                relevance += 0.5 if 'discussion' in content_lower or 'opinion' in content_lower else 0
+                # if 'in_reply_to' in item: relevance *= 0.8 # Might require inspecting item structure
                 tweet_items.append({
-                    'title': item.get('content'), 
-                    'url': url,
-                    'tweet_id': tweet_id,
-                    'published_date': item.get('published_date'),
-                    'relevance': relevance
+                    'title': item.get('content'), 'url': url, 'tweet_id': tweet_id,
+                    'published_date': item.get('published_date'), 'relevance': relevance
                 })
-            
             tweet_items.sort(key=lambda x: x.get('relevance', 0), reverse=True)
-            num_to_engage = random.randint(1, 2)
-            logger.debug(f"Found {len(tweet_items)} relevant tweet items, selecting top {num_to_engage} for engagement.")
-            return tweet_items[:num_to_engage]
+            logger.debug(f"Found {len(tweet_items)} potential tweets for engagement.")
+            return tweet_items[:MAX_TWEET_ENGAGEMENTS_PER_RUN + 2] # Fetch a few extra 
             
         except Exception as e:
-            logger.error(f"Error fetching tweets: {e}", exc_info=True) # Added exc_info for more detail
+            logger.error(f"Error fetching tweets for engagement: {e}", exc_info=True)
             return []
 
-    def engage_with_tweets(self) -> bool:
-        """Find and engage with relevant tweets about Embodied AI with randomness."""
-        try:
-            tweets_to_engage = self.fetch_top_tweets()
-            if not tweets_to_engage:
-                logger.info("No relevant tweets found to engage with.")
-                return True
+    def process_and_engage_tweets(self, tweets_to_process: List[Dict], recent_texts: List[str]) -> int:
+        """Process potential tweets: Prioritize retweeting, optionally like/reply."""
+        if not tweets_to_process:
+            logger.info("No relevant tweets found to process.")
+            return 0
 
-            logger.info(f"Found {len(tweets_to_engage)} relevant tweets to engage with")
-            success = True
-            possible_actions = ['reply', 'like', 'retweet']
+        logger.info(f"Processing {len(tweets_to_process)} potential tweets for engagement (max {MAX_TWEET_ENGAGEMENTS_PER_RUN})...")
+        engagement_count = 0 # Total actions: retweets, likes, replies
+        retweet_count = 0
+        possible_secondary_actions = ['like', 'reply']
 
-            for tweet in tweets_to_engage:
-                try:
-                    tweet_id_int = int(tweet['tweet_id'])
-                    tweet_url = tweet['url']
-                    logger.info(f"Processing engagement for tweet: {tweet_url}")
+        for tweet in tweets_to_process:
+            if engagement_count >= MAX_TWEET_ENGAGEMENTS_PER_RUN:
+                logger.info("Reached max engagement actions for this run.")
+                break
+            
+            try:
+                tweet_id_int = int(tweet['tweet_id'])
+                tweet_url = tweet['url']
+                tweet_text_snippet = tweet.get('title', '')[:80] + "..."
+                logger.info(f"Considering tweet {tweet_id_int}: '{tweet_text_snippet}'")
 
-                    num_actions = random.randint(1, len(possible_actions))
-                    actions_to_take = random.sample(possible_actions, k=num_actions)
-                    logger.debug(f"Actions for tweet {tweet_id_int}: {actions_to_take}")
+                # *** Primary Action: Retweet ***
+                # Check if URL already exists in recent posts before attempting retweet
+                should_retweet = True
+                for recent_post in recent_texts:
+                    if tweet_url in recent_post:
+                        logger.warning(f"Tweet URL {tweet_url} found in recent posts. Skipping retweet attempt.")
+                        should_retweet = False
+                        break
+                
+                retweet_successful = False
+                if should_retweet:
+                    time.sleep(random.uniform(1, 5))
+                    try:
+                        self.twitter_client.retweet(tweet_id_int)
+                        logger.info(f"Retweeted tweet {tweet_id_int}")
+                        engagement_count += 1
+                        retweet_count += 1
+                        retweet_successful = True
+                        # Add marker to recent texts to help internal duplicate check
+                        recent_texts.insert(0, f"Retweeted: {tweet_url}") 
+                    except tweepy.errors.TweepyException as e:
+                        if e.api_codes == [327]: logger.warning(f"Already retweeted {tweet_id_int}.")
+                        elif e.api_codes == [144]: logger.warning(f"Cannot retweet {tweet_id_int}, not found.")
+                        else: logger.error(f"Failed to retweet {tweet_id_int}: {e}")
+                
+                # *** Secondary Actions (Like/Reply) - Less frequent ***
+                if engagement_count < MAX_TWEET_ENGAGEMENTS_PER_RUN and random.random() < 0.4: # 40% chance for secondary actions
+                    num_secondary = random.randint(0, len(possible_secondary_actions))
+                    actions_to_take = random.sample(possible_secondary_actions, k=num_secondary)
+                    logger.debug(f"Secondary actions for tweet {tweet_id_int}: {actions_to_take}")
 
-                    engagement_performed = False
                     if 'reply' in actions_to_take:
-                        comment = self.generate_engaging_comment(tweet['title'], tweet_url)
-                        if comment and comment not in ["Interesting point!", "Interesting perspective! Thanks for sharing."]:
-                            time.sleep(random.uniform(1, 4))
-                            try:
-                                response = self.twitter_client.create_tweet(
-                                    text=comment, 
-                                    in_reply_to_tweet_id=tweet_id_int
-                                )
-                                logger.info(f"Replied to tweet {tweet_id_int}. Reply ID: {response.data['id']}")
-                                engagement_performed = True
-                            except tweepy.errors.TweepyException as e:
-                                if e.api_codes == [187]:
-                                    logger.warning(f"Reply to {tweet_id_int} is a duplicate, skipping reply.")
-                                elif e.api_codes == [433]:
-                                     logger.warning(f"Cannot reply to tweet {tweet_id_int}, it might be deleted/hidden.")
-                                else:
-                                    logger.error(f"Failed to reply to tweet {tweet_id_int}: {e}")
-                        else:
-                             logger.warning(f"Generated comment for {tweet_id_int} was empty or fallback, skipping reply.")
+                         # Check semantic duplication before replying
+                        if not self.is_duplicate(tweet_url, tweet.get('title'), tweet.get('title'), recent_texts):
+                            comment = self.generate_engaging_comment(tweet['title'], tweet_url)
+                            if comment and comment not in ["Interesting point!", "Interesting perspective! Thanks for sharing."]:
+                                time.sleep(random.uniform(1, 4))
+                                try:
+                                    response = self.twitter_client.create_tweet(text=comment, in_reply_to_tweet_id=tweet_id_int)
+                                    logger.info(f"Replied to tweet {tweet_id_int}. Reply ID: {response.data['id']}")
+                                    engagement_count += 1
+                                    recent_texts.insert(0, comment) # Add reply to recent texts
+                                except tweepy.errors.TweepyException as e:
+                                    if e.api_codes == [187]: logger.warning(f"Reply to {tweet_id_int} is duplicate.")
+                                    elif e.api_codes == [433]: logger.warning(f"Cannot reply to {tweet_id_int} (deleted/hidden).")
+                                    else: logger.error(f"Failed to reply to {tweet_id_int}: {e}")
+                            else: logger.warning(f"Generated comment for {tweet_id_int} was empty/fallback, skipping reply.")
+                        else: logger.warning(f"Skipping reply to {tweet_id_int} due to semantic duplication.")
                     
-                    if 'retweet' in actions_to_take:
-                        time.sleep(random.uniform(0.5, 3))
-                        try:
-                            self.twitter_client.retweet(tweet_id_int)
-                            logger.info(f"Retweeted tweet {tweet_id_int}")
-                            engagement_performed = True
-                        except tweepy.errors.TweepyException as e:
-                            if e.api_codes == [327]:
-                                logger.warning(f"Already retweeted {tweet_id_int}, skipping retweet.")
-                            elif e.api_codes == [144]:
-                                logger.warning(f"Cannot retweet tweet {tweet_id_int}, not found.")
-                            else:
-                                logger.error(f"Failed to retweet tweet {tweet_id_int}: {e}")
-
                     if 'like' in actions_to_take:
                         time.sleep(random.uniform(0.5, 3))
                         try:
                             self.twitter_client.like(tweet_id_int)
                             logger.info(f"Liked tweet {tweet_id_int}")
-                            engagement_performed = True
+                            engagement_count += 1 # Liking also counts as an engagement action
                         except tweepy.errors.TweepyException as e:
-                            if e.api_codes == [139]:
-                                logger.warning(f"Already liked {tweet_id_int}, skipping like.")
-                            elif e.api_codes == [144]:
-                                 logger.warning(f"Cannot like tweet {tweet_id_int}, not found.")
-                            else:
-                                logger.error(f"Failed to like tweet {tweet_id_int}: {e}")
-                                
-                    if engagement_performed:
-                         logger.info(f"Completed engagement actions for tweet: {tweet_url}")
-                         time.sleep(random.uniform(5, 15))
-                    else:
-                        logger.warning(f"No engagement actions successfully performed for tweet: {tweet_url}")
+                            if e.api_codes == [139]: logger.warning(f"Already liked {tweet_id_int}.")
+                            elif e.api_codes == [144]: logger.warning(f"Cannot like {tweet_id_int}, not found.")
+                            else: logger.error(f"Failed to like {tweet_id_int}: {e}")
+                
+                if retweet_successful: # Add longer pause after a successful primary action (retweet)
+                    time.sleep(random.uniform(10, 25)) 
+                elif engagement_count > 0: # Shorter pause after secondary actions
+                     time.sleep(random.uniform(3, 8))
 
-                except Exception as e:
-                    logger.error(f"Error processing engagement for tweet {tweet.get('url', 'N/A')}: {e}")
-                    success = False 
-                    continue
+            except Exception as e:
+                logger.error(f"Error processing engagement for tweet {tweet.get('url', 'N/A')}: {e}")
+                continue
 
-            return success
-
-        except Exception as e:
-            logger.error(f"Error in tweet engagement process: {e}")
-            return False
+        logger.info(f"Finished tweet engagement phase. Total actions: {engagement_count} ({retweet_count} retweets)." )
+        return engagement_count # Return total actions performed
 
     def run(self) -> bool:
-        """Run both news posting and tweet engagement."""
-        news_success = self.post_to_twitter(self.fetch_top_news())
-        logger.info(f"News posting phase completed with success: {news_success}. Waiting before engagement...")
-        time.sleep(random.uniform(10, 25)) 
-        tweet_success = self.engage_with_tweets()
-        logger.info(f"Tweet engagement phase completed with success: {tweet_success}")
-        return news_success and tweet_success 
+        """Run the main workflow: Prioritize Twitter engagement, supplement with news links."""
+        logger.info("=== Starting News Poster Run ===")
+        recent_posts = self.fetch_recent_posts_texts()
+        
+        # 1. Fetch and process Twitter content (Primary Goal)
+        tweets_for_engagement = self.fetch_top_tweets_for_engagement()
+        engagements_done = self.process_and_engage_tweets(tweets_for_engagement, recent_posts)
+        
+        # 2. Fetch and post supplementary news links if fewer than max posts were done via engagement
+        posts_needed = MAX_NEWS_POSTS_PER_RUN - engagements_done
+        news_posted_count = 0
+        if posts_needed > 0:
+            logger.info(f"Engagement actions ({engagements_done}) less than target ({MAX_NEWS_POSTS_PER_RUN}). Looking for supplementary news links...")
+            supplementary_news = self.fetch_supplementary_news()
+            news_posted_count = self.post_supplementary_news(supplementary_news, recent_posts, posts_needed)
+        else:
+            logger.info("Target engagement actions met or exceeded, skipping supplementary news posting.")
+            
+        total_posts_actions = engagements_done + news_posted_count
+        logger.info(f"=== News Poster Run Finished. Total actions/posts: {total_posts_actions} ===")
+        return total_posts_actions > 0 # Consider run successful if at least one action was taken
