@@ -304,7 +304,7 @@ Is the core news story in the 'New Item' already covered in the 'Recent Posts'? 
             response = self.tavily_client.search(
                 query="embodied AI robotics conversation OR discussion OR opinion",
                 search_depth="advanced",
-                topic="social", # Focus on social media mentions
+                # topic="social", # Removed this potentially problematic parameter
                 max_results=20 # Get more to find relevant ones
             )
             
@@ -350,7 +350,7 @@ Is the core news story in the 'New Item' already covered in the 'Recent Posts'? 
             return tweet_items[:num_to_engage]
             
         except Exception as e:
-            logger.error(f"Error fetching tweets: {e}")
+            logger.error(f"Error fetching tweets: {e}", exc_info=True) # Added exc_info for more detail
             return []
 
     def engage_with_tweets(self) -> bool:

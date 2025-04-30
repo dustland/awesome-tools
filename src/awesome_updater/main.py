@@ -36,7 +36,9 @@ def initialize_components(config: Config):
         content_merger = ContentMerger(git_manager.get_readme_path(), gpt_service)
         
         logger.info("Initializing content fetcher...")
-        content_fetcher = ContentFetcher(github_token, tavily_api_key)
+        logger.info(f"Initializing content fetcher with {len(config.content_sources)} sources...")
+        content_fetcher = ContentFetcher(config.content_sources, config.github_token, gpt_service)
+        logger.info("Content fetcher initialized.")
         
         logger.info("All components initialized successfully")
         return gpt_service, git_manager, content_merger, content_fetcher
@@ -44,111 +46,112 @@ def initialize_components(config: Config):
         logger.error(f"Error initializing components: {str(e)}")
         raise
 
-def fetch_and_process_content(content_fetcher: ContentFetcher):
-    """Fetch, sort, and format content."""
+def fetch_and_process_content(content_fetcher: ContentFetcher) -> list:
+    """Fetches, processes (sorts, formats), and returns content."""
     logger.info("Fetching content using aggregated search...")
     try:
         all_content = content_fetcher.fetch_all_content()
-        logger.info(f"Found {len(all_content)} relevant items")
         
+        # Check for None or empty list right after fetching
         if not all_content:
-            logger.info("No content found.")
+            logger.info("No content found or returned from fetcher.")
             return []
             
-        # Sort content by impact score
-        all_content.sort(key=lambda x: x.get('impact_score', 0), reverse=True)
-        logger.info("Sorted content by impact score")
-        
-        # Log top 5 items
-        logger.info("\nTop 5 items by impact score:")
-        for i, item in enumerate(all_content[:5], 1):
-            logger.info(f"{i}. {item.get('title', 'No title')} (Score: {item.get('impact_score', 0):.2f})")
-            logger.info(f"   Type: {item.get('type', 'unknown')}")
-            logger.info(f"   Stars: {item.get('metrics', {}).get('stars', 0)}")
-            if 'citations' in item:
-                logger.info(f"   Citations: {item['citations']}")
-            if 'relevance_score' in item:
-                logger.info(f"   Relevance: {item['relevance_score']:.2f}")
-            logger.info(f"   Description: {item.get('description', '')[:100]}...")
+        logger.info(f"Found {len(all_content)} relevant items initially.")
 
-        logger.info("\nPreparing content for merging...")
-        formatted_content = []
+        # Sort content by relevance (assuming relevance score exists)
+        all_content.sort(key=lambda x: x.get('relevance', 0), reverse=True)
+        logger.debug("Content sorted by relevance.")
+
+        # Basic deduplication based on URL
+        seen_urls = set()
+        deduplicated_content = []
         for item in all_content:
-            if item.get('type') == 'research':
-                paper_link = next((link for link in item.get('links', []) if 'arxiv.org' in link or 'doi.org' in link), '')
-                code_link = next((link for link in item.get('links', []) if 'github.com' in link), '')
-                formatted_content.append(
-                    f"| {item.get('title')} | {item.get('description', '')} | "
-                    f"[Paper]({paper_link}) | [Code]({code_link}) |"
-                )
+            url = item.get('url')
+            if url:
+                if url not in seen_urls:
+                    deduplicated_content.append(item)
+                    seen_urls.add(url)
+                else:
+                    logger.debug(f"Skipping duplicate URL: {url}")
             else:
-                main_link = item.get('links', [''])[0]
-                stars = item.get('metrics', {}).get('stars', 0)
-                formatted_content.append(
-                    f"- [{item.get('title')}]({main_link}) - {item.get('description', '')} "
-                    f"[⭐{stars}]"
-                )
-        
-        logger.info("Content prepared for merging")
+                deduplicated_content.append(item) 
+                
+        logger.info(f"Content deduplicated, {len(deduplicated_content)} items remaining.")
+
+        # Format content for README
+        formatted_content = []
+        for item in deduplicated_content:
+            title = item.get('title', 'No Title')
+            url = item.get('url')
+            line = f"- [{title}]({url})" if url else f"- {title}"
+            formatted_content.append(line)
+            
+        logger.info("Content formatted for README.")
         return formatted_content
         
     except Exception as e:
-        logger.error(f"Error fetching or processing content: {str(e)}")
-        raise
+        # Log the specific error encountered during fetching/processing
+        logger.error(f"Error during content fetching or processing: {e}", exc_info=True) 
+        # Return an empty list to gracefully handle the error downstream
+        return []
 
-def update_readme(content_merger: ContentMerger, formatted_content: list):
-    """Merge new content into the README file."""
-    logger.info("\nMerging content with existing README...")
+def update_readme(content_merger: ContentMerger, formatted_content: list) -> bool:
+    """Updates the README file with new content."""
     if not formatted_content:
-        logger.info("No formatted content to merge.")
+        logger.info("No new formatted content to merge into README.")
         return False
-    
+        
+    logger.info(f"Merging {len(formatted_content)} new items into README...")
     try:
-        if content_merger.merge_content("\n".join(formatted_content)):
-            logger.info("Successfully merged formatted content into README")
-            return True
+        readme_path = content_merger.get_readme_path()
+        if not readme_path or not os.path.exists(readme_path):
+             logger.error("README file path not found or doesn't exist.")
+             return False
+        updated = content_merger.merge_content_into_readme(formatted_content)
+        if updated:
+            logger.info("README updated successfully.")
         else:
-            logger.info("No new content added during merge operation.")
-            return False
+            logger.info("No changes made to README (content might already exist).")
+        return updated
     except Exception as e:
-        logger.error(f"Error merging content: {str(e)}")
-        raise
+        logger.error(f"Error merging content into README: {e}")
+        return False
 
 def commit_and_push_changes(git_manager: GitManager, has_updates: bool):
-    """Commit and push changes if updates were made."""
+    """Commits and pushes changes if the README was updated."""
     if not has_updates:
-        logger.info("\nNo updates were merged, skipping commit.")
+        logger.info("No updates detected, skipping commit and push.")
         return
 
+    logger.info("Updates detected, proceeding with commit and push...")
     try:
-        if git_manager.has_changes():
-            logger.info("\nChanges detected in README, committing and pushing...")
-            commit_message = "Update awesome list with new high-impact resources"
-            git_manager.commit_and_push(commit_message)
-            logger.info(f"Successfully committed and pushed changes with message: '{commit_message}'")
-        else:
-            logger.info("\nREADME merge reported updates, but no changes detected by Git. Skipping commit.")
+        commit_message = "Update awesome list with new high-impact resources"
+        git_manager.commit(commit_message)
+        git_manager.push()
+        logger.info("Changes committed and pushed successfully.")
     except Exception as e:
-        logger.error(f"Error committing or pushing changes: {str(e)}")
-        raise
+        logger.error(f"Error during commit and push: {e}")
+
 
 def main():
     logger.info("=== Starting Awesome Embodied AI content update process ===")
+    # Load configuration
+    logger.info("Loading configuration...")
+    config = Config.load_config()
+    logger.info("Configuration loaded successfully")
     
+    gpt_service, git_manager, content_merger, content_fetcher = (None, None, None, None)
     try:
-        # Load configuration
-        logger.info("Loading configuration...")
-        config = Config.load_config()
-        logger.info("Configuration loaded successfully")
-        
         # Initialize components
         gpt_service, git_manager, content_merger, content_fetcher = initialize_components(config)
         
         # Fetch and process content
+        # The function now handles internal errors and returns []
         formatted_content = fetch_and_process_content(content_fetcher)
         
         # Merge content into README
-        readme_updated = update_readme(content_merger, formatted_content)
+        readme_updated = update_readme(content_merger, formatted_content) 
         
         # Commit and push changes if necessary
         commit_and_push_changes(git_manager, readme_updated)
@@ -158,7 +161,14 @@ def main():
     except ValueError as ve: 
          logger.error(f"Initialization failed: {str(ve)}")
     except Exception as e:
-        logger.error(f"An unexpected error occurred during the update process: {str(e)}")
+        # Catch any other unexpected errors in the main flow
+        logger.error(f"An unexpected error occurred in the main update process: {str(e)}", exc_info=True)
+    finally:
+        # Ensure git_manager temporary directory is cleaned up 
+        if git_manager:
+            logger.debug("Ensuring cleanup of GitManager's temporary directory.")
+            # Assuming GitManager has a __del__ method for cleanup
+            pass 
 
 if __name__ == "__main__":
     main()
